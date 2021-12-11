@@ -117,11 +117,16 @@ class ParallaxImage extends ParallaxRenderer {
 
   ParallaxImage(
     this._image, {
-    super.repeat,
-    super.alignment,
-    super.fill,
-    super.filterQuality,
-  });
+    ImageRepeat? repeat,
+    Alignment? alignment,
+    LayerFill? fill,
+    FilterQuality? filterQuality,
+  }) : super(
+          repeat: repeat,
+          alignment: alignment,
+          fill: fill,
+          filterQuality: filterQuality,
+        );
 
   /// Takes a path of an image, and optionally arguments for how the image
   /// should repeat ([repeat]), which edge it should align with ([alignment]),
