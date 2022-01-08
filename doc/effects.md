@@ -31,7 +31,6 @@ the final value is provided by the user explicitly, and progression over time is
 
 There are multiple effects provided by Flame, and you can also
 [create your own](#creating-new-effects). The following effects are included:
-- [`ColorEffect`](#coloreffect)
 - [`MoveEffect.by`](#moveeffectby)
 - [`MoveEffect.to`](#moveeffectto)
 - [`MoveAlongPathEffect`](#movealongpatheffect)
@@ -42,6 +41,8 @@ There are multiple effects provided by Flame, and you can also
 - [`SizeEffect.by`](#sizeeffectby)
 - [`SizeEffect.to`](#sizeeffectto)
 - [`OpacityEffect`](#opacityeffect)
+- [`ColorEffect`](#coloreffect)
+- [`SequenceEffect`](#sequenceeffect)
 - [`RemoveEffect`](#removeeffect)
 
 An `EffectController` is an object that describes how the effect should evolve over time. If you
@@ -59,7 +60,11 @@ There are multiple effect controllers provided by the Flame framework as well:
 - [`RepeatedEffectController`](#repeatedeffectcontroller)
 - [`InfiniteEffectController`](#infiniteeffectcontroller)
 - [`SequenceEffectController`](#sequenceeffectcontroller)
+- [`SpeedEffectController`](#speedeffectcontroller)
 - [`DelayedEffectController`](#delayedeffectcontroller)
+- [`RandomEffectController`](#randomeffectcontroller)
+- [`SineEffectController`](#sineeffectcontroller)
+- [`ZigzagEffectController`](#zigzageffectcontroller)
 
 
 ## Built-in effects
@@ -78,6 +83,9 @@ functionality inherited by all other effects. This includes:
   - Property `removeOnFinish` (which is true by default) will cause the effect component to be
     removed from the game tree and garbage-collected once the effect completes. Set this to false
     if you plan to reuse the effect after it is finished.
+
+  - Optional user-provided `onFinishCallback`, which will be invoked when the effect has just
+    completed its execution but before it is removed from the game.
 
   - The `reset()` method reverts the effect to its original state, allowing it to run once again.
 
@@ -140,7 +148,7 @@ is in radians. For example, the following effect will rotate the target 90º (=[
 clockwise:
 
 ```dart
-final effect = RotateEffect.by(tau/4, EffectController(2));
+final effect = RotateEffect.by(tau/4, EffectController(duration: 2));
 ```
 
 
@@ -150,7 +158,7 @@ Rotates the target clockwise to the specified angle. For example, the following 
 target to look east (0º is north, 90º=[tau]/4 east, 180º=tau/2 south, and 270º=tau*3/4 west):
 
 ```dart
-final effect = RotateEffect.to(tau/4, EffectController(2));
+final effect = RotateEffect.to(tau/4, EffectController(duration: 2));
 ```
 
 
@@ -160,7 +168,7 @@ This effect will change the target's scale by the specified amount. For example,
 the component to grow 50% larger:
 
 ```dart
-final effect = ScaleEffect.by(Vector2.all(1.5), EffectController(0.3));
+final effect = ScaleEffect.by(Vector2.all(1.5), EffectController(duration: 0.3));
 ```
 
 
@@ -169,7 +177,7 @@ final effect = ScaleEffect.by(Vector2.all(1.5), EffectController(0.3));
 This effect works similar to `ScaleEffect.by`, but sets the absolute value of the target's scale.
 
 ```dart
-final effect = ScaleEffect.to(Vector2.zero(), EffectController(0.5));
+final effect = ScaleEffect.to(Vector2.zero(), EffectController(duration: 0.5));
 ```
 
 
@@ -180,7 +188,7 @@ if the target has size `Vector2(100, 100)`, then after the following effect is a
 course, the new size will be `Vector2(120, 50)`:
 
 ```dart
-final effect = SizeEffect.by(Vector2(20, -50), EffectController(1));
+final effect = SizeEffect.by(Vector2(20, -50), EffectController(duration: 1));
 ```
 
 The size of a `PositionComponent` cannot be negative. If an effect attempts to set the size to a
@@ -197,7 +205,7 @@ more generally and scales the children components too.
 Changes the size of the target component to the specified size. Target size cannot be negative:
 
 ```dart
-final effect = SizeEffect.to(Vector2(120, 120), EffectController(1));
+final effect = SizeEffect.to(Vector2(120, 120), EffectController(duration: 1));
 ```
 
 
@@ -208,12 +216,30 @@ this effect can only be applied to components that have a `HasPaint` mixin. If t
 uses multiple paints, the effect can target any individual color using the `paintId` parameter.
 
 ```dart
-final effect = OpacityEffect.to(0.5, EffectController(0.75));
+final effect = OpacityEffect.to(0.5, EffectController(duration: 0.75));
 ```
 
 The opacity value of 0 corresponds to a fully transparent component, and the opacity value of 1 is
 fully opaque. Convenience constructors `OpacityEffect.fadeOut()` and `OpacityEffect.fadeIn()` will
 animate the target into full transparency / full visibility respectively.
+
+
+### `SequenceEffect`
+
+This effect can be used to run multiple other effects one after another. The constituent effects
+may have different types.
+
+The sequence effect can also be alternating (the sequence will first run forward, and then 
+backward); and also repeat a certain predetermined number of times, or infinitely.
+
+```dart
+final effect = SequenceEffect([
+  ScaleEffect.by(1.5, EffectController(duration: 0.2, alternate: true)),
+  MoveEffect.by(Vector2(30, -50), EffectController(duration: 0.5)),
+  OpacityEffect.to(0, EffectController(duration: 0.3)),
+  RemoveEffect(),
+]);
+```
 
 
 ### `RemoveEffect`
@@ -234,21 +260,20 @@ the provided color between a provided range.
 Usage example:
 
 ```dart
-myComponent.add(
-  ColorEffect(
-    const Color(0xFF00FF00),
-    const Offset(0.0, 0.8),
-    EffectController(duration: 1.5),
-  ),
+final effect = ColorEffect(
+  const Color(0xFF00FF00),
+  const Offset(0.0, 0.8),
+  EffectController(duration: 1.5),
 );
 ```
 
 The `Offset` argument will determine "how much" of the color that will be applied to the component,
 in this example the effect will start with 0% and will go up to 80%.
 
-__Note :__Due to how this effect is implemented, and how Flutter's `ColorFilter` class works, this
+__Note:__ Due to how this effect is implemented, and how Flutter's `ColorFilter` class works, this
 effect can't be mixed with other `ColorEffect`s, when more than one is added to the component, only
 the last one will have effect.
+
 
 ## Creating new effects
 
@@ -448,6 +473,28 @@ final ec = SequenceEffectController([
 ```
 
 
+### `SpeedEffectController`
+
+Alters the duration of its child effect controller so that the effect proceeds at the predefined
+speed. The initial duration of the child EffectController is irrelevant. The child controller must
+be the subclass of `DurationEffectController`.
+
+The `SpeedEffectController` can only be applied to effects for which the notion of speed is
+well-defined. Such effects must implement the `MeasurableEffect` interface. For example, the
+following effects qualify: [`MoveEffect.by`](#moveeffectby), [`MoveEffect.to`](#moveeffectto),
+[`MoveAlongPathEffect`](#movealongpatheffect), [`RotateEffect.by`](#rotateeffectby),
+[`RotateEffect.to`](#rotateeffectto).
+
+The parameter `speed` is in units per second, where the notion of a "unit" depends on the target
+effect. For example, for move effects, they refer to the distance travelled; for rotation effects
+the units are radians.
+
+```dart
+final ec1 = SpeedEffectController(LinearEffectController(0), speed: 1);
+final ec2 = EffectController(speed: 1); // same as ec1
+```
+
+
 ### `DelayedEffectController`
 
 Effect controller that executes its child controller after the prescribed `delay`. While the
@@ -459,8 +506,52 @@ final ec = DelayedEffectController(LinearEffectController(1), delay: 5);
 ```
 
 
+### `RandomEffectController`
+
+This controller wraps another controller and makes its duration random. The actual value for the
+duration is re-generated upon each reset, which makes this controller particularly useful within
+repeated contexts, such as [](#repeatedeffectcontroller) or [](#infiniteeffectcontroller).
+
+```dart
+final ec = RandomEffectController.uniform(
+  LinearEffectController(0),  // duration here is irrelevant
+  min: 0.5,
+  max: 1.5,
+);
+```
+
+The user has the ability to control which `Random` source to use, as well as the exact distribution
+of the produced random durations. Two distributions -- `.uniform` and `.exponential` are included,
+any other can be implemented by the user.
+
+
+### `SineEffectController`
+
+An effect controller that represents a single period of the sine function. Use this to create
+natural-looking harmonic oscillations. Two perpendicular move effects governed by
+`SineEffectControllers` with different periods, will create a [Lissajous curve].
+
+```dart
+final ec = SineEffectController(period: 1);
+```
+
+
+### `ZigzagEffectController`
+
+Simple alternating effect controller. Over the course of one `period`, this controller will proceed
+linearly from 0 to 1, then to -1, and then back to 0. Use this for oscillating effects where the
+starting position should be the center of the oscillations, rather than the extreme (as provided
+by the standard alternating `EffectController`).
+
+```dart
+final ec = ZigzagEffectController(period: 2);
+```
+
+
 ## See also
 
 * [Examples of various effects](https://examples.flame-engine.org/#/).
 
+
 [tau]: https://en.wikipedia.org/wiki/Tau_(mathematical_constant)
+[Lissajous curve]: https://en.wikipedia.org/wiki/Lissajous_curve

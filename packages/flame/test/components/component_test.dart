@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
 import 'package:flame_test/flame_test.dart';
 import 'package:test/test.dart';
 
@@ -14,7 +15,37 @@ class _RemoveComponent extends Component {
   }
 }
 
+class _PrepareGame extends FlameGame {
+  late final _ParentOnPrepareComponent prepareParent;
+
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+    await add(prepareParent = _ParentOnPrepareComponent());
+  }
+
+  @override
+  void prepareComponent(Component c) {
+    super.prepareComponent(c);
+    (c as _OnPrepareComponent).prepareRuns++;
+  }
+}
+
+class _OnPrepareComponent extends Component {
+  int prepareRuns = 0;
+}
+
+class _ParentOnPrepareComponent extends _OnPrepareComponent {
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+    await add(_OnPrepareComponent());
+  }
+}
+
 void main() {
+  final prepareGame = FlameTester(() => _PrepareGame());
+
   group('Component', () {
     test('get/set x/y or position', () {
       final PositionComponent c = SpriteComponent();
@@ -114,5 +145,28 @@ void main() {
         expect(game.children.length, 1);
       },
     );
+
+    prepareGame.test(
+      'adding children to a parent that is not yet added to a game should not '
+      'run double onPrepare',
+      (game) async {
+        final parent = game.prepareParent;
+        expect(parent.prepareRuns, 1);
+        expect((parent.children.first as _OnPrepareComponent).prepareRuns, 1);
+      },
+    );
+
+    test('childrenFactory', () {
+      Component.childrenFactory = (Component owner) {
+        return ComponentSet.createDefault(owner, strictMode: false);
+      };
+
+      final component1 = Component();
+      final component2 = Component();
+      component1.add(component2);
+      component2.add(Component());
+      expect(component1.children.strictMode, false);
+      expect(component2.children.strictMode, false);
+    });
   });
 }

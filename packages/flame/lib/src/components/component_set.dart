@@ -41,11 +41,16 @@ class ComponentSet extends QueryableOrderedSet<Component> {
   /// It is also called when the component changes parent.
   final Component parent;
 
+  static bool defaultStrictMode = false;
+
   ComponentSet(
     int Function(Component e1, Component e2)? comparator,
     this.parent, {
-    bool strictMode = true,
-  }) : super(comparator: comparator, strictMode: strictMode);
+    bool? strictMode,
+  }) : super(
+          comparator: comparator,
+          strictMode: strictMode ?? defaultStrictMode,
+        );
 
   /// Prepares and registers one component to be added on the next game tick.
   ///
@@ -103,7 +108,7 @@ class ComponentSet extends QueryableOrderedSet<Component> {
     // Should run every time the component gets a new parent, including its
     // first parent.
     component.onMount();
-    if (component.children.isNotEmpty) {
+    if (component.hasChildren) {
       await component.reAddChildren();
     }
 
@@ -245,12 +250,12 @@ class ComponentSet extends QueryableOrderedSet<Component> {
   /// will be added.
   static ComponentSet createDefault(
     Component parent, {
-    bool strictMode = true,
+    bool? strictMode,
   }) {
     return ComponentSet(
       Comparing.on<Component>((c) => c.priority),
       parent,
-      strictMode: strictMode,
+      strictMode: strictMode ?? defaultStrictMode,
     );
   }
 }

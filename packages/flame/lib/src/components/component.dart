@@ -14,6 +14,8 @@ import 'cache/value_cache.dart';
 /// called automatically once the component is added to the component tree in
 /// your game (with `game.add`).
 class Component with Loadable {
+  Component({int? priority}) : _priority = priority ?? 0;
+
   /// What coordinate system this component should respect (i.e. should it
   /// observe camera, viewport, or use the raw canvas).
   ///
@@ -41,7 +43,14 @@ class Component with Loadable {
   /// removed from its current parent.
   Component? nextParent;
 
-  late final ComponentSet children = createComponentSet();
+  /// The iterable of children of the current component.
+  ///
+  /// This getter will automatically create the [ComponentSet] container within
+  /// the current object if it didn't exist before. Check the [hasChildren] in
+  /// order to avoid instantiating that object.
+  ComponentSet get children => _children ??= createComponentSet();
+  bool get hasChildren => _children?.isNotEmpty ?? false;
+  ComponentSet? _children;
 
   /// Render priority of this component. This allows you to control the order in
   /// which your components are rendered.
@@ -108,7 +117,23 @@ class Component with Loadable {
     return _debugTextPaintCache.value!;
   }
 
-  Component({int? priority}) : _priority = priority ?? 0;
+  //#region Component lifecycle methods
+
+  /// Called after the component has finished running its [onLoad] method and
+  /// when the component is added to its new parent.
+  ///
+  /// Whenever [onMount] returns something, the parent will wait for the future
+  /// to be resolved before adding it. If `null` is returned, the class is
+  /// added right away.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// void onMount() {
+  ///   position = parent!.size / 2;
+  /// }
+  /// ```
+  void onMount() {}
 
   /// This method is called periodically by the game engine to request that your
   /// component updates itself.
@@ -124,27 +149,25 @@ class Component with Loadable {
   /// This method traverses the component tree and calls [update] on all its
   /// children according to their [priority] order, relative to the
   /// priority of the direct siblings, not the children or the ancestors.
-  /// If you call this method from [update] you need to set [callOwnUpdate] to
-  /// false so that you don't get stuck in an infinite loop.
-  void updateTree(double dt, {bool callOwnUpdate = true}) {
-    children.updateComponentList();
-    if (callOwnUpdate) {
-      update(dt);
-    }
-    children.forEach((c) => c.updateTree(dt));
+  void updateTree(double dt) {
+    _children?.updateComponentList();
+    update(dt);
+    _children?.forEach((c) => c.updateTree(dt));
   }
 
   void render(Canvas canvas) {}
 
   void renderTree(Canvas canvas) {
     render(canvas);
-    children.forEach((c) => c.renderTree(canvas));
+    _children?.forEach((c) => c.renderTree(canvas));
 
     // Any debug rendering should be rendered on top of everything
     if (debugMode) {
       renderDebugMode(canvas);
     }
   }
+
+  //#endregion
 
   void renderDebugMode(Canvas canvas) {}
 
@@ -170,18 +193,15 @@ class Component with Loadable {
     nextParent = component;
   }
 
-  final List<Component> _ancestors = [];
-
-  /// A list containing the current parent and its parent, and so on, until it
-  /// reaches a component without a parent.
-  List<Component> ancestors() {
-    _ancestors.clear();
-    for (var currentParent = parent;
-        currentParent != null;
-        currentParent = currentParent.parent) {
-      _ancestors.add(currentParent);
+  /// An iterator producing this component's parent, then its parent's parent,
+  /// then the great-grand-parent, and so on, until it reaches a component
+  /// without a parent.
+  Iterable<Component> ancestors() sync* {
+    var current = parent;
+    while (current != null) {
+      yield current;
+      current = current.parent;
     }
-    return _ancestors;
   }
 
   /// It receives the new game size.
@@ -191,17 +211,13 @@ class Component with Loadable {
   @mustCallSuper
   void onGameResize(Vector2 gameSize) {
     super.onGameResize(gameSize);
-    children.forEach((child) => child.onGameResize(gameSize));
+    _children?.forEach((child) => child.onGameResize(gameSize));
   }
 
   /// Called right before the component is removed from the game.
-  @override
   @mustCallSuper
   void onRemove() {
-    super.onRemove();
-    children.forEach((child) {
-      child.onRemove();
-    });
+    _children?.forEach((child) => child.onRemove());
     isPrepared = false;
     isMounted = false;
     _parent = null;
@@ -237,32 +253,34 @@ class Component with Loadable {
   /// [onLoad] and [onMount] runs again. Used when a parent is changed
   /// further up the tree.
   Future<void> reAddChildren() async {
-    await Future.wait(children.map(add));
-    await Future.wait(children.addLater.map(add));
+    if (_children != null) {
+      await Future.wait(_children!.map(add));
+      await Future.wait(_children!.addLater.map(add));
+    }
   }
 
   /// Removes a component from the component tree, calling [onRemove] for it and
   /// its children.
   void remove(Component c) {
-    children.remove(c);
+    _children?.remove(c);
   }
 
   /// Removes all the children in the list and calls [onRemove] for all of them
   /// and their children.
   void removeAll(Iterable<Component> cs) {
-    children.removeAll(cs);
+    _children?.removeAll(cs);
   }
 
   /// Whether the children list contains the given component.
   ///
   /// This method uses reference equality.
-  bool contains(Component c) => children.contains(c);
+  bool contains(Component c) => _children?.contains(c) ?? false;
 
   /// Call this if any of this component's children priorities have changed
   /// at runtime.
   ///
   /// This will call [ComponentSet.rebalanceAll] on the [children] ordered set.
-  void reorderChildren() => children.rebalanceAll();
+  void reorderChildren() => _children?.rebalanceAll();
 
   /// This method first calls the passed handler on the leaves in the tree,
   /// the children without any children of their own.
@@ -279,22 +297,24 @@ class Component with Loadable {
     bool Function(T) handler,
   ) {
     var shouldContinue = true;
-    for (final child in children.reversed()) {
-      shouldContinue = child.propagateToChildren(handler);
-      if (shouldContinue && child is T) {
-        shouldContinue = handler(child);
-      } else if (shouldContinue && child is FlameGame) {
-        shouldContinue = child.propagateToChildren<T>(handler);
-      }
-      if (!shouldContinue) {
-        break;
+    if (_children != null) {
+      for (final child in _children!.reversed()) {
+        shouldContinue = child.propagateToChildren(handler);
+        if (shouldContinue && child is T) {
+          shouldContinue = handler(child);
+        } else if (shouldContinue && child is FlameGame) {
+          shouldContinue = child.propagateToChildren<T>(handler);
+        }
+        if (!shouldContinue) {
+          break;
+        }
       }
     }
     return shouldContinue;
   }
 
-  /// Finds the closest parent further up the hierarchy that satisfies type=T,
-  /// or null if none is found.
+  /// Returns the closest parent further up the hierarchy that satisfies type=T,
+  /// or null if no such parent can be found.
   T? findParent<T extends Component>() {
     return (parent is T ? parent : parent?.findParent<T>()) as T?;
   }
@@ -322,7 +342,7 @@ class Component with Loadable {
     final parentGame = findParent<FlameGame>();
     if (parentGame == null) {
       isPrepared = false;
-    } else {
+    } else if (!isPrepared) {
       assert(
         parentGame.hasLayout,
         '"prepare/add" called before the game is ready. '
@@ -336,13 +356,15 @@ class Component with Loadable {
     }
   }
 
-  /// This method sets up the `OrderedSet` instance used by this component to
-  /// handle its children,
-  /// This is set up before any lifecycle methods happen.
-  ///
-  /// You can return a specific sub-class of `OrderedSet`, like
-  /// `QueryableOrderedSet` for example.
-  ComponentSet createComponentSet() {
-    return ComponentSet.createDefault(this);
-  }
+  /// `Component.childrenFactory` is the default method for creating children
+  /// containers within all components. Replace this method if you want to have
+  /// customized (non-default) [ComponentSet] instances in your project.
+  static ComponentSetFactory childrenFactory = ComponentSet.createDefault;
+
+  /// This method creates the children container for the current component.
+  /// Override this method if you need to have a custom [ComponentSet] within
+  /// a particular class.
+  ComponentSet createComponentSet() => childrenFactory(this);
 }
+
+typedef ComponentSetFactory = ComponentSet Function(Component owner);
