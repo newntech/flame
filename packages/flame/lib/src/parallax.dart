@@ -238,6 +238,10 @@ class ParallaxLayer {
   late Vector2 _imageSize;
   double _scale = 1.0;
 
+  Vector2 _scrollPosition = Vector2(0, 0);
+  double get scrollPositionX => _scrollPosition.x;
+  double get scrollPositionY => _scrollPosition.y;
+
   /// [parallaxRenderer] is the representation of the renderer with data of how
   /// the layer should behave.
   /// [velocityMultiplier] will be used to determine the velocity of the layer
@@ -305,10 +309,10 @@ class ParallaxLayer {
         break;
     }
 
-    final scrollPosition = _scroll.clone()..multiply(_imageSize);
+    _scrollPosition = _scroll.clone()..multiply(_imageSize);
     _paintArea = Rect.fromLTWH(
-      -scrollPosition.x,
-      -scrollPosition.y,
+      -_scrollPosition.x,
+      -_scrollPosition.y,
       _paintArea.width,
       _paintArea.height,
     );
