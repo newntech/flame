@@ -31,7 +31,7 @@ class SpriteWidget extends StatelessWidget {
   /// A builder function that is called while the loading is on the way
   final WidgetBuilder? loadingBuilder;
 
-  final FutureOr<Sprite> _spriteFuture;
+  late Future<Sprite> _spriteFuture;
 
   const SpriteWidget({
     required Sprite sprite,
@@ -39,10 +39,12 @@ class SpriteWidget extends StatelessWidget {
     this.angle = 0,
     this.srcPosition,
     this.srcSize,
-    super.key,
-  })  : _spriteFuture = sprite,
-        errorBuilder = null,
-        loadingBuilder = null;
+    this.errorBuilder,
+    this.loadingBuilder,
+    Key? key,
+  }) : super(key: key) {
+    _spriteFuture = Future.value(sprite);
+  }
 
   /// Load the image from the asset [path] and renders it as a widget.
   ///
@@ -59,27 +61,29 @@ class SpriteWidget extends StatelessWidget {
     this.srcSize,
     this.errorBuilder,
     this.loadingBuilder,
-    super.key,
-  }) : _spriteFuture = Sprite.load(
+    Key? key,
+  })  : _spriteFuture = Sprite.load(
           path,
           srcSize: srcSize,
           srcPosition: srcPosition,
           images: images,
-        );
+        ),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BaseFutureBuilder<Sprite>(
+    return FutureBuilder<Sprite>(
       future: _spriteFuture,
-      builder: (_, sprite) {
-        return InternalSpriteWidget(
-          sprite: sprite,
-          anchor: anchor,
-          angle: angle,
-        );
+      builder: (_, snapshot) {
+        if (snapshot.hasData) {
+          return _SpriteWidget(
+            sprite: snapshot.data!,
+            anchor: anchor,
+            angle: angle,
+          );
+        }
+        return Container();
       },
-      errorBuilder: errorBuilder,
-      loadingBuilder: loadingBuilder,
     );
   }
 }

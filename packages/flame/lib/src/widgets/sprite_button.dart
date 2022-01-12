@@ -38,7 +38,7 @@ class SpriteButton extends StatelessWidget {
   /// A builder function that is called while the loading is on the way
   final WidgetBuilder? loadingBuilder;
 
-  final FutureOr<List<Sprite>> _buttonsFuture;
+  final Future<List<Sprite>> _buttonsFuture;
 
   SpriteButton({
     required Sprite sprite,
@@ -72,11 +72,12 @@ class SpriteButton extends StatelessWidget {
     this.pressedSrcSize,
     this.errorBuilder,
     this.loadingBuilder,
-    super.key,
-  }) : _buttonsFuture = Future.wait([
-          sprite,
-          pressedSprite,
-        ]);
+    Key? key,
+  })  : _buttonsFuture = Future.wait([
+          Future.value(sprite),
+          Future.value(pressedSprite),
+        ]),
+        super(key: key);
 
   /// Loads the images from the asset [path] and [pressedPath] and renders
   /// it as a widget.
@@ -99,8 +100,8 @@ class SpriteButton extends StatelessWidget {
     this.pressedSrcSize,
     this.errorBuilder,
     this.loadingBuilder,
-    super.key,
-  }) : _buttonsFuture = Future.wait([
+    Key? key,
+  })  : _buttonsFuture = Future.wait([
           Sprite.load(
             path,
             srcSize: srcSize,
@@ -113,27 +114,33 @@ class SpriteButton extends StatelessWidget {
             srcPosition: pressedSrcPosition,
             images: images,
           ),
-        ]);
+        ]),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BaseFutureBuilder<List<Sprite>>(
+    return FutureBuilder<List<Sprite>>(
       future: _buttonsFuture,
-      builder: (_, list) {
-        final sprite = list[0];
-        final pressedSprite = list[1];
-
-        return InternalSpriteButton(
-          onPressed: onPressed,
-          label: label,
-          width: width,
-          height: height,
-          sprite: sprite,
-          pressedSprite: pressedSprite,
-        );
+      builder: (_, snapshot) {
+        if (snapshot.hasData) {
+          return _buildSprite(context, snapshot.data!);
+        }
+        return Container();
       },
-      errorBuilder: errorBuilder,
-      loadingBuilder: loadingBuilder,
+    );
+  }
+
+  Widget _buildSprite(BuildContext context, List<Sprite> list) {
+    final sprite = list[0];
+    final pressedSprite = list[1];
+
+    return _SpriteButton(
+      onPressed: onPressed,
+      label: label,
+      width: width,
+      height: height,
+      sprite: sprite,
+      pressedSprite: pressedSprite,
     );
   }
 }
