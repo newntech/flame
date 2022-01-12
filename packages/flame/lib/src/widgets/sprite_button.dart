@@ -37,7 +37,7 @@ class SpriteButton extends StatelessWidget {
   /// A builder function that is called while the loading is on the way
   final WidgetBuilder? loadingBuilder;
 
-  final Future<List<Sprite>> Function() _buttonsFuture;
+  final Future<List<Sprite>> _buttonsFuture;
 
   SpriteButton({
     required Sprite sprite,
@@ -53,10 +53,10 @@ class SpriteButton extends StatelessWidget {
     this.errorBuilder,
     this.loadingBuilder,
     Key? key,
-  })  : _buttonsFuture = (() => Future.wait([
-              Future.value(sprite),
-              Future.value(pressedSprite),
-            ])),
+  })  : _buttonsFuture = Future.wait([
+          Future.value(sprite),
+          Future.value(pressedSprite),
+        ]),
         super(key: key);
 
   SpriteButton.asset({
@@ -74,41 +74,46 @@ class SpriteButton extends StatelessWidget {
     this.errorBuilder,
     this.loadingBuilder,
     Key? key,
-  })  : _buttonsFuture = (() => Future.wait([
-              Sprite.load(
-                path,
-                srcSize: srcSize,
-                srcPosition: srcPosition,
-                images: images,
-              ),
-              Sprite.load(
-                pressedPath,
-                srcSize: pressedSrcSize,
-                srcPosition: pressedSrcPosition,
-                images: images,
-              ),
-            ])),
+  })  : _buttonsFuture = Future.wait([
+          Sprite.load(
+            path,
+            srcSize: srcSize,
+            srcPosition: srcPosition,
+            images: images,
+          ),
+          Sprite.load(
+            pressedPath,
+            srcSize: pressedSrcSize,
+            srcPosition: pressedSrcPosition,
+            images: images,
+          ),
+        ]),
         super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BaseFutureBuilder<List<Sprite>>(
-      futureBuilder: _buttonsFuture,
-      builder: (_, list) {
-        final sprite = list[0];
-        final pressedSprite = list[1];
-
-        return _SpriteButton(
-          onPressed: onPressed,
-          label: label,
-          width: width,
-          height: height,
-          sprite: sprite,
-          pressedSprite: pressedSprite,
-        );
+    return FutureBuilder<List<Sprite>>(
+      future: _buttonsFuture,
+      builder: (_, snapshot) {
+        if (snapshot.hasData) {
+          return _buildSprite(context, snapshot.data!);
+        }
+        return Container();
       },
-      errorBuilder: errorBuilder,
-      loadingBuilder: loadingBuilder,
+    );
+  }
+
+  Widget _buildSprite(BuildContext context, List<Sprite> list) {
+    final sprite = list[0];
+    final pressedSprite = list[1];
+
+    return _SpriteButton(
+      onPressed: onPressed,
+      label: label,
+      width: width,
+      height: height,
+      sprite: sprite,
+      pressedSprite: pressedSprite,
     );
   }
 }

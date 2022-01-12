@@ -30,7 +30,7 @@ class SpriteWidget extends StatelessWidget {
   /// A builder function that is called while the loading is on the way
   final WidgetBuilder? loadingBuilder;
 
-  final Future<Sprite> Function() _spriteFuture;
+  late Future<Sprite> _spriteFuture;
 
   SpriteWidget({
     required Sprite sprite,
@@ -41,8 +41,9 @@ class SpriteWidget extends StatelessWidget {
     this.errorBuilder,
     this.loadingBuilder,
     Key? key,
-  })  : _spriteFuture = (() => Future.value(sprite)),
-        super(key: key);
+  }) : super(key: key) {
+    _spriteFuture = Future.value(sprite);
+  }
 
   SpriteWidget.asset({
     required String path,
@@ -54,27 +55,28 @@ class SpriteWidget extends StatelessWidget {
     this.errorBuilder,
     this.loadingBuilder,
     Key? key,
-  })  : _spriteFuture = (() => Sprite.load(
-              path,
-              srcSize: srcSize,
-              srcPosition: srcPosition,
-              images: images,
-            )),
+  })  : _spriteFuture = Sprite.load(
+          path,
+          srcSize: srcSize,
+          srcPosition: srcPosition,
+          images: images,
+        ),
         super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BaseFutureBuilder<Sprite>(
-      futureBuilder: _spriteFuture,
-      builder: (_, sprite) {
-        return _SpriteWidget(
-          sprite: sprite,
-          anchor: anchor,
-          angle: angle,
-        );
+    return FutureBuilder<Sprite>(
+      future: _spriteFuture,
+      builder: (_, snapshot) {
+        if (snapshot.hasData) {
+          return _SpriteWidget(
+            sprite: snapshot.data!,
+            anchor: anchor,
+            angle: angle,
+          );
+        }
+        return Container();
       },
-      errorBuilder: errorBuilder,
-      loadingBuilder: loadingBuilder,
     );
   }
 }
