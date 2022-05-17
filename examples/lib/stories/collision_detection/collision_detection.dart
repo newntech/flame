@@ -1,11 +1,9 @@
 import 'package:dashbook/dashbook.dart';
+import 'package:examples/commons/commons.dart';
+import 'package:examples/stories/collision_detection/circles_example.dart';
+import 'package:examples/stories/collision_detection/collidable_animation_example.dart';
+import 'package:examples/stories/collision_detection/multiple_shapes_example.dart';
 import 'package:flame/game.dart';
-
-import '../../commons/commons.dart';
-import 'circles_example.dart';
-import 'collidable_animation_example.dart';
-import 'multiple_shapes_example.dart';
-import 'simple_shapes_example.dart';
 
 void addCollisionDetectionStories(Dashbook dashbook) {
   dashbook.storiesOf('Collision Detection')
@@ -27,11 +25,5 @@ void addCollisionDetectionStories(Dashbook dashbook) {
       (_) => GameWidget(game: MultipleShapesExample()),
       codeLink: baseLink('collision_detection/multiple_shapes_example.dart'),
       info: MultipleShapesExample.description,
-    )
-    ..add(
-      'Simple Shapes',
-      (_) => GameWidget(game: SimpleShapesExample()),
-      codeLink: baseLink('collision_detection/simple_shapes_example.dart'),
-      info: SimpleShapesExample.description,
     );
 }

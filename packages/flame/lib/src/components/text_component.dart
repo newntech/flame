@@ -1,9 +1,9 @@
 import 'dart:ui';
 
+import 'package:flame/components.dart';
+import 'package:flame/src/text/text_renderer.dart';
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
 
 class TextComponent<T extends TextRenderer> extends PositionComponent {
   String _text;
@@ -33,6 +33,7 @@ class TextComponent<T extends TextRenderer> extends PositionComponent {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   })  : _text = text ?? '',
         _textRenderer = textRenderer ?? TextRenderer.createDefault<T>(),
@@ -42,6 +43,7 @@ class TextComponent<T extends TextRenderer> extends PositionComponent {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         ) {
     updateBounds();

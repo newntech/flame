@@ -1,132 +1,46 @@
-import 'dart:ui' as ui;
+import 'dart:ui';
 
-import 'package:flutter/widgets.dart';
-
-import '../../assets.dart';
-import '../../flame.dart';
-import '../extensions/vector2.dart';
-import '../sprite.dart';
-import 'base_future_builder.dart';
+import 'package:flame/cache.dart';
+import 'package:flame/flame.dart';
+import 'package:flame/src/nine_tile_box.dart' as non_widget;
+import 'package:flame/src/sprite.dart';
+import 'package:flame/src/widgets/base_future_builder.dart';
+import 'package:flutter/material.dart' hide Image;
 
 export '../nine_tile_box.dart';
 export '../sprite.dart';
 
 class _Painter extends CustomPainter {
-  final ui.Image image;
+  final Image image;
   final double tileSize;
   final double destTileSize;
+  late final non_widget.NineTileBox _nineTileBox;
 
   _Painter({
     required this.image,
     required this.tileSize,
     required this.destTileSize,
-  });
-
-  Sprite _getSpriteTile(double x, double y) =>
-      Sprite(image, srcPosition: Vector2(x, y), srcSize: Vector2.all(tileSize));
+  }) : _nineTileBox = non_widget.NineTileBox(
+          Sprite(image),
+          tileSize: tileSize.toInt(),
+          destTileSize: destTileSize.toInt(),
+        );
 
   @override
   void paint(Canvas canvas, Size size) {
-    final topLeftCorner = _getSpriteTile(0, 0);
-    final topRightCorner = _getSpriteTile(tileSize * 2, 0);
-
-    final bottomLeftCorner = _getSpriteTile(0, 2 * tileSize);
-    final bottomRightCorner = _getSpriteTile(tileSize * 2, 2 * tileSize);
-
-    final topSide = _getSpriteTile(tileSize, 0);
-    final bottomSide = _getSpriteTile(tileSize, tileSize * 2);
-
-    final leftSide = _getSpriteTile(0, tileSize);
-    final rightSide = _getSpriteTile(tileSize * 2, tileSize);
-
-    final middle = _getSpriteTile(tileSize, tileSize);
-
-    final horizontalWidget = size.width - destTileSize * 2;
-    final verticalHeight = size.height - destTileSize * 2;
-
-    void render(Sprite sprite, double x, double y, double w, double h) {
-      sprite.render(canvas, position: Vector2(x, y), size: Vector2(w, h));
-    }
-
-    // Middle
-    render(
-      middle,
-      destTileSize,
-      destTileSize,
-      horizontalWidget,
-      verticalHeight,
-    );
-
-    // Top and bottom side
-    render(
-      topSide,
-      destTileSize,
-      0,
-      horizontalWidget,
-      destTileSize,
-    );
-    render(
-      bottomSide,
-      destTileSize,
-      size.height - destTileSize,
-      horizontalWidget,
-      destTileSize,
-    );
-
-    // Left and right side
-    render(
-      leftSide,
-      0,
-      destTileSize,
-      destTileSize,
-      verticalHeight,
-    );
-    render(
-      rightSide,
-      size.width - destTileSize,
-      destTileSize,
-      destTileSize,
-      verticalHeight,
-    );
-
-    // Corners
-    render(
-      topLeftCorner,
-      0,
-      0,
-      destTileSize,
-      destTileSize,
-    );
-    render(
-      topRightCorner,
-      size.width - destTileSize,
-      0,
-      destTileSize,
-      destTileSize,
-    );
-    render(
-      bottomLeftCorner,
-      0,
-      size.height - destTileSize,
-      destTileSize,
-      destTileSize,
-    );
-    render(
-      bottomRightCorner,
-      size.width - destTileSize,
-      size.height - destTileSize,
-      destTileSize,
-      destTileSize,
-    );
+    _nineTileBox.drawRect(canvas, Offset.zero & size);
   }
 
   @override
   bool shouldRepaint(_) => false;
 }
 
+@Deprecated('Renamed to [NineTileBoxWidget], this will be remove in v1.2.0')
+typedef NineTileBox = NineTileBoxWidget;
+
 /// A [StatelessWidget] that renders NineTileBox
-class NineTileBox extends StatelessWidget {
-  final Future<ui.Image> Function() _imageFuture;
+class NineTileBoxWidget extends StatelessWidget {
+  final Future<Image> Function() _imageFuture;
 
   /// The size of the tile on the image
   final double tileSize;
@@ -138,26 +52,29 @@ class NineTileBox extends StatelessWidget {
 
   final Widget? child;
 
+  final EdgeInsetsGeometry? padding;
+
   /// A builder function that is called if the loading fails
   final WidgetBuilder? errorBuilder;
 
   /// A builder function that is called while the loading is on the way
   final WidgetBuilder? loadingBuilder;
 
-  NineTileBox({
-    required ui.Image image,
+  NineTileBoxWidget({
+    required Image image,
     required this.tileSize,
     required this.destTileSize,
     this.width,
     this.height,
     this.child,
+    this.padding,
     this.errorBuilder,
     this.loadingBuilder,
     Key? key,
   })  : _imageFuture = (() => Future.value(image)),
         super(key: key);
 
-  NineTileBox.asset({
+  NineTileBoxWidget.asset({
     required String path,
     required this.tileSize,
     required this.destTileSize,
@@ -165,6 +82,7 @@ class NineTileBox extends StatelessWidget {
     this.width,
     this.height,
     this.child,
+    this.padding,
     this.errorBuilder,
     this.loadingBuilder,
     Key? key,
@@ -173,7 +91,7 @@ class NineTileBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BaseFutureBuilder<ui.Image>(
+    return BaseFutureBuilder<Image>(
       futureBuilder: _imageFuture,
       builder: (_, image) {
         return _NineTileBox(
@@ -183,6 +101,7 @@ class NineTileBox extends StatelessWidget {
           width: width,
           height: height,
           child: child,
+          padding: padding,
         );
       },
       errorBuilder: errorBuilder,
@@ -192,7 +111,7 @@ class NineTileBox extends StatelessWidget {
 }
 
 class _NineTileBox extends StatelessWidget {
-  final ui.Image image;
+  final Image image;
   final double tileSize;
   final double destTileSize;
   final double? width;

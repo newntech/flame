@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 class _GameHasDraggables extends FlameGame with HasDraggables {}
 
 void main() {
-  final withDraggables = FlameTester(() => _GameHasDraggables());
+  final withDraggables = FlameTester(_GameHasDraggables.new);
 
   group('JoystickDirection tests', () {
     withDraggables.test('can convert angle to JoystickDirection', (game) async {
@@ -50,7 +50,7 @@ void main() {
           margin: const EdgeInsets.only(left: 20, top: 20),
         );
         await game.add(joystick);
-        game.update(0);
+        await game.ready();
         expect(joystick.knob!.position, closeToVector(10, 10));
         // Start dragging the joystick
         game.onDragStart(

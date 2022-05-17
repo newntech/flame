@@ -1,5 +1,6 @@
-import '../../../components.dart';
-import '../../../game.dart';
+import 'package:flame/components.dart';
+import 'package:flame/game.dart';
+import 'package:flutter/material.dart';
 
 mixin HasGameRef<T extends FlameGame> on Component {
   T? _gameRef;
@@ -27,5 +28,14 @@ mixin HasGameRef<T extends FlameGame> on Component {
   void onRemove() {
     super.onRemove();
     _gameRef = null;
+  }
+
+  /// Directly assigns (and override if one is already set) a [gameRef] to the
+  /// component.
+  ///
+  /// This is meant to be used only for testing purposes.
+  @visibleForTesting
+  void mockGameRef(T gameRef) {
+    _gameRef = gameRef;
   }
 }

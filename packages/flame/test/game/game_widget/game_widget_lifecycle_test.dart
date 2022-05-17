@@ -15,13 +15,13 @@ class _MyGame extends FlameGame {
   }
 
   @override
-  Future<void> onLoad() async {
-    await super.onLoad();
+  Future<void>? onLoad() {
     events.add('onLoad');
+    return null;
   }
 
   @override
-  Future<void>? onMount() {
+  void onMount() {
     events.add('onMount');
   }
 

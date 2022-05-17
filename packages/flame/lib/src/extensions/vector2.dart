@@ -22,7 +22,7 @@ extension Vector2Extension on Vector2 {
   /// to the origin, and whose size is the right-hand-side operand.
   Rect operator &(Vector2 size) => toPositionedRect(size);
 
-  /// Creates a [Rect] starting from [x, y] and having the size of the
+  /// Creates a [Rect] starting from (x, y) and having the size of the
   /// argument [Vector2]
   Rect toPositionedRect(Vector2 size) => Rect.fromLTWH(x, y, size.x, size.y);
 
@@ -39,6 +39,11 @@ extension Vector2Extension on Vector2 {
 
   /// Whether the [Vector2] is the identity vector or not
   bool isIdentity() => x == 1 && y == 1;
+
+  /// Distance to [other] vector, using the taxicab (L1) geometry.
+  double taxicabDistanceTo(Vector2 other) {
+    return (x - other.x).abs() + (y - other.y).abs();
+  }
 
   /// Rotates the [Vector2] with [angle] in radians
   /// rotates around [center] if it is defined

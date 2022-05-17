@@ -1,12 +1,11 @@
 import 'dart:async';
 
+import 'package:flame/components.dart';
+import 'package:flame/game.dart';
+import 'package:flame/src/cache/images.dart';
+import 'package:flame/src/parallax.dart';
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
-import '../../game.dart';
-import '../assets/images.dart';
-import '../parallax.dart';
 
 extension ParallaxComponentExtension on FlameGame {
   Future<ParallaxComponent> loadParallaxComponent(
@@ -46,6 +45,9 @@ extension ParallaxComponentExtension on FlameGame {
 /// layer moves with different velocities to give an effect of depth.
 class ParallaxComponent<T extends FlameGame> extends PositionComponent
     with HasGameRef<T> {
+  @override
+  PositionType positionType = PositionType.viewport;
+
   bool isFullscreen = true;
   Parallax? _parallax;
 
@@ -63,6 +65,7 @@ class ParallaxComponent<T extends FlameGame> extends PositionComponent
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   })  : _parallax = parallax,
         isFullscreen = size == null && !(parallax?.isSized ?? false),
@@ -72,6 +75,7 @@ class ParallaxComponent<T extends FlameGame> extends PositionComponent
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         );
 
@@ -117,8 +121,8 @@ class ParallaxComponent<T extends FlameGame> extends PositionComponent
   /// Optionally arguments for the [baseVelocity] and [velocityMultiplierDelta]
   /// can be passed in, [baseVelocity] defines what the base velocity of the
   /// layers should be and [velocityMultiplierDelta] defines how the velocity
-  /// should change the closer the layer is ([velocityMultiplierDelta ^ n],
-  /// where n is the layer index).
+  /// should change the closer the layer is (`velocityMultiplierDelta ^ n`,
+  /// where `n` is the layer index).
   /// Arguments for how all the images should repeat ([repeat]),
   /// which edge it should align with ([alignment]), which axis it should fill
   /// the image on ([fill]) and [images] which is the image cache that should be

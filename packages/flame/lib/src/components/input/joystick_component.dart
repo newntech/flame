@@ -1,11 +1,10 @@
 import 'dart:math';
 
+import 'package:flame/components.dart';
+import 'package:flame/src/components/input/hud_margin_component.dart';
+import 'package:flame/src/gestures/events.dart';
 import 'package:flutter/rendering.dart' show EdgeInsets;
 import 'package:meta/meta.dart';
-
-import '../../../components.dart';
-import '../../gestures/events.dart';
-import 'hud_margin_component.dart';
 
 enum JoystickDirection {
   up,
@@ -23,7 +22,8 @@ class JoystickComponent extends HudMarginComponent with Draggable {
   late final PositionComponent? knob;
   late final PositionComponent? background;
 
-  /// The percentage [0.0, 1.0] the knob is dragged from the center to the edge.
+  /// The percentage `[0.0, 1.0]` the knob is dragged from the center to the
+  /// edge.
   double intensity = 0.0;
 
   /// The amount the knob is dragged from the center, scaled to fit inside the
@@ -52,6 +52,7 @@ class JoystickComponent extends HudMarginComponent with Draggable {
     double? size,
     double? knobRadius,
     Anchor anchor = Anchor.center,
+    Iterable<Component>? children,
     int? priority,
   })  : assert(
           size != null || background != null,
@@ -67,6 +68,7 @@ class JoystickComponent extends HudMarginComponent with Draggable {
           position: position,
           size: background?.size ?? Vector2.all(size ?? 0),
           anchor: anchor,
+          children: children,
           priority: priority,
         ) {
     this.knobRadius = knobRadius ?? this.size.x / 2;
@@ -75,6 +77,7 @@ class JoystickComponent extends HudMarginComponent with Draggable {
   @override
   @mustCallSuper
   void onMount() {
+    super.onMount();
     assert(
       knob != null,
       'The knob has to either be passed in as an argument or set in onLoad',
@@ -108,24 +111,24 @@ class JoystickComponent extends HudMarginComponent with Draggable {
   }
 
   @override
-  bool onDragStart(int pointerId, DragStartInfo info) {
+  bool onDragStart(DragStartInfo info) {
     return false;
   }
 
   @override
-  bool onDragUpdate(_, DragUpdateInfo info) {
+  bool onDragUpdate(DragUpdateInfo info) {
     _unscaledDelta.add(info.delta.global);
     return false;
   }
 
   @override
-  bool onDragEnd(int id, __) {
-    onDragCancel(id);
+  bool onDragEnd(_) {
+    onDragCancel();
     return false;
   }
 
   @override
-  bool onDragCancel(_) {
+  bool onDragCancel() {
     _unscaledDelta.setZero();
     return false;
   }

@@ -1,17 +1,11 @@
-import 'dart:async';
-import 'dart:ui';
-
-import 'package:flutter/material.dart';
+import 'package:flame/cache.dart';
+import 'package:flame/components.dart';
+import 'package:flame/extensions.dart';
+import 'package:flame/src/game/game_render_box.dart';
+import 'package:flame/src/game/projector.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-
-import '../../../components.dart';
-import '../../assets/assets_cache.dart';
-import '../../assets/images.dart';
-import '../../extensions/offset.dart';
-import '../game_render_box.dart';
-import '../projector.dart';
-import 'loadable.dart';
+import 'package:meta/meta.dart';
 
 /// This gives access to a low-level game API, to not build everything from a
 /// low level `FlameGame` should be used.
@@ -20,7 +14,7 @@ import 'loadable.dart';
 /// methods to use it in a `GameWidget`.
 /// Flame will deal with calling these methods properly when the game's widget
 /// is rendered.
-mixin Game on Loadable {
+mixin Game {
   final images = Images();
   final assets = AssetsCache();
 
@@ -46,9 +40,18 @@ mixin Game on Loadable {
   /// Use [size] and [hasLayout] for safe access.
   Vector2? _size;
 
+  /// This variable ensures that Game's [onLoad] is called no more than once.
+  @internal
+  late Future<void>? onLoadFuture = onLoad();
+
   /// Current game viewport size, updated every resize via the [onGameResize]
   /// method hook.
   Vector2 get size {
+    assertHasLayout();
+    return _size!;
+  }
+
+  Vector2 get canvasSize {
     assertHasLayout();
     return _size!;
   }
@@ -69,10 +72,8 @@ mixin Game on Loadable {
   /// is called.
   ///
   /// The default implementation just sets the new size on the size field
-  @override
   @mustCallSuper
   void onGameResize(Vector2 size) {
-    super.onGameResize(size);
     _size = (_size ?? Vector2.zero())..setFrom(size);
   }
 
@@ -92,8 +93,39 @@ mixin Game on Loadable {
   /// Check [AppLifecycleState] for details about the events received.
   void lifecycleStateChange(AppLifecycleState state) {}
 
-  /// Use for calculating the FPS.
-  void onTimingsCallback(List<FrameTiming> timings) {}
+  /// Method to perform late initialization of the [Game] class.
+  ///
+  /// Usually, this method is the main place where you initialize your [Game]
+  /// class. This has several advantages over the traditional constructor:
+  ///   - this method can be `async`;
+  ///   - it is invoked when the size of the game widget is already known.
+  ///
+  /// The default implementation returns `null`, indicating that there is no
+  /// need to await anything. When overriding this method, you have a choice
+  /// whether to create a regular or async function.
+  ///
+  /// If you need an async [onLoad], then make your override return non-nullable
+  /// `Future<void>`:
+  /// ```dart
+  /// @override
+  /// Future<void> onLoad() async {
+  ///   // your code here
+  /// }
+  /// ```
+  ///
+  /// Alternatively, if your [onLoad] function doesn't use any `await`ing, then
+  /// you can declare it as a regular method and then return `null`:
+  /// ```dart
+  /// @override
+  /// Future<void>? onLoad() {
+  ///   // your code here
+  ///   return null;
+  /// }
+  /// ```
+  ///
+  /// The engine ensures that this method will be called exactly once during
+  /// the lifetime of the [Game] instance. Do not call this method manually.
+  Future<void>? onLoad() => null;
 
   void onMount() {}
 
@@ -262,6 +294,12 @@ mixin Game on Loadable {
 /// - [Game.overlays]
 class ActiveOverlaysNotifier extends ChangeNotifier {
   final Set<String> _activeOverlays = {};
+
+  /// Clear all active overlays.
+  void clear() {
+    value.clear();
+    notifyListeners();
+  }
 
   /// Mark a, overlay to be rendered.
   ///

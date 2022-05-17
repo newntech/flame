@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flame/components.dart';
+import 'package:flame/src/palette.dart';
+import 'package:flame/src/text/text_renderer.dart';
 import 'package:flutter/widgets.dart' hide Image;
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
-import '../palette.dart';
 
 /// A set of configurations for the [TextBoxComponent] itself, as opposed to
 /// the [TextRenderer], which contains the configuration for how to render the
@@ -55,8 +55,10 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
   late int _totalLines;
 
   double _lifeTime = 0.0;
-  Image? _cache;
   int? _previousChar;
+
+  @visibleForTesting
+  Image? cache;
 
   TextBoxConfig get boxConfig => _boxConfig;
 
@@ -69,6 +71,7 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   })  : _boxConfig = boxConfig ?? TextBoxConfig(),
         pixelRatio = pixelRatio ?? window.devicePixelRatio,
@@ -79,6 +82,7 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         );
 
@@ -96,6 +100,14 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
   Future<void> onLoad() async {
     await super.onLoad();
     await redraw();
+  }
+
+  @override
+  @mustCallSuper
+  void onMount() {
+    if (cache == null) {
+      redraw();
+    }
   }
 
   @override
@@ -188,12 +200,12 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
 
   @override
   void render(Canvas c) {
-    if (_cache == null) {
+    if (cache == null) {
       return;
     }
     c.save();
     c.scale(1 / pixelRatio);
-    c.drawImage(_cache!, Offset.zero, _imagePaint);
+    c.drawImage(cache!, Offset.zero, _imagePaint);
     c.restore();
   }
 
@@ -232,7 +244,14 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
 
   Future<void> redraw() async {
     final newSize = _recomputeSize();
-    _cache = await _fullRenderAsImage(newSize);
+    final cachedImage = cache;
+    if (cachedImage != null) {
+      // Do not dispose of the cached image immediately, since it may have been
+      // sent into the rendering pipeline where it is still pending to be used.
+      // See issue #1618 for details.
+      Future.delayed(const Duration(milliseconds: 100), cachedImage.dispose);
+    }
+    cache = await _fullRenderAsImage(newSize);
     size = newSize;
   }
 
@@ -243,5 +262,13 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
       redraw();
     }
     _previousChar = currentChar;
+  }
+
+  @override
+  @mustCallSuper
+  void onRemove() {
+    super.onRemove();
+    cache?.dispose();
+    cache = null;
   }
 }

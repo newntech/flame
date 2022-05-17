@@ -1,10 +1,10 @@
 import 'dart:ui';
 
-import '../image_composition.dart';
-import 'anchor.dart';
-import 'assets/images.dart';
-import 'flame.dart';
-import 'palette.dart';
+import 'package:flame/src/anchor.dart';
+import 'package:flame/src/cache/images.dart';
+import 'package:flame/src/flame.dart';
+import 'package:flame/src/image_composition.dart';
+import 'package:flame/src/palette.dart';
 
 /// A [Sprite] is a region of an [Image] that can be rendered in the Canvas.
 ///
@@ -101,7 +101,7 @@ class Sprite {
     final drawSize = size ?? srcSize;
 
     final delta = anchor.toVector2()..multiply(drawSize);
-    final drawRect = (drawPosition + delta).toPositionedRect(drawSize);
+    final drawRect = (drawPosition - delta).toPositionedRect(drawSize);
 
     final drawPaint = overridePaint ?? paint;
 
@@ -111,7 +111,8 @@ class Sprite {
   /// Return a new Image based on the [src] of the Sprite.
   ///
   /// **Note:** This is a heavy async operation and should not be called inside
-  /// the game loop.
+  /// the game loop. Remember to call dispose on the [Image] object once you
+  /// aren't going to use it anymore.
   Future<Image> toImage() async {
     final composition = ImageComposition()
       ..add(image, Vector2.zero(), source: src);

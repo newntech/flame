@@ -1,10 +1,9 @@
+import 'package:examples/commons/ember.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flame/palette.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-
-import '../../commons/ember.dart';
 
 class KeyboardExample extends FlameGame with KeyboardEvents {
   static const String description = '''
@@ -21,7 +20,6 @@ class KeyboardExample extends FlameGame with KeyboardEvents {
 
   @override
   Future<void> onLoad() async {
-    await super.onLoad();
     ember = Ember(position: size / 2, size: Vector2.all(100));
     add(ember);
   }

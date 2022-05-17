@@ -15,10 +15,15 @@ BlocProvider<ExampleGame>(
 )
 ```
 
+To enable the features of `flame_bloc` in your game, you can make your game class inherit from
+`FlameBlocGame`, or if you are already using an enhanced `FlameGame` class (like for example a
+`Forge2DGame`), the `FlameBloc` mixin can be used instead.
+
+
 To access the bloc from inside your game, the `read` method can be used.
 
 ```dart
-class ExampleGame example FlameBlocGame {
+class ExampleGame extends FlameBlocGame {
   void selectWeapon() {
     read<InventoryBloc>.add(WeaponSelected('axe'));
   }

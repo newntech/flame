@@ -1,9 +1,10 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:flame/components.dart';
 import 'package:flame_bloc/flame_bloc.dart';
 import 'package:flame_test/flame_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 enum InventoryState {
   sword,
@@ -27,8 +28,15 @@ class MyBlocGame extends FlameBlocGame {}
 class InventoryComponent extends Component
     with BlocComponent<InventoryCubit, InventoryState> {}
 
-// ignore: implicit_dynamic_type
-class MockInventoryComponent extends Mock implements BlocComponent {}
+class MockInventoryComponent extends Component
+    with BlocComponent<InventoryCubit, InventoryState> {
+  int numSubscribeCalls = 0;
+
+  @override
+  void subscribe(FlameBloc game) {
+    numSubscribeCalls++;
+  }
+}
 
 void main() {
   group('FlameBlocGame', () {
@@ -39,7 +47,7 @@ void main() {
     });
 
     final blocGame = FlameTester<MyBlocGame>(
-      () => MyBlocGame(),
+      MyBlocGame.new,
       pumpWidget: (gameWidget, tester) async {
         await tester.pumpWidget(
           BlocProvider<InventoryCubit>.value(
@@ -50,9 +58,9 @@ void main() {
       },
     );
 
-    blocGame.widgetTest(
+    blocGame.testGameWidget(
       'can emit states',
-      (game, tester) async {
+      verify: (game, tester) async {
         game.read<InventoryCubit>().selectBow();
 
         expect(cubit.state, equals(InventoryState.bow));
@@ -80,47 +88,53 @@ void main() {
       'runs the queue when game is attached',
       (game) {
         final component = MockInventoryComponent();
-
-        game.prepareComponent(component);
-
-        game.onAttach();
-
-        verify(() => component.subscribe(game)).called(1);
-      },
-    );
-
-    blocGame.widgetTest(
-      'init components with the initial state',
-      (game, tester) async {
-        final component = InventoryComponent();
-        game.add(component);
-
-        expect(component.state, equals(InventoryState.sword));
-      },
-    );
-
-    blocGame.widgetTest(
-      'Components can be removed',
-      (game, tester) async {
-        final component = InventoryComponent();
         game.add(component);
         game.update(0);
+        expect(game.subscriptionQueue.length, 1);
+        game.onAttach();
+
+        expect(component.numSubscribeCalls, 1);
+      },
+    );
+
+    blocGame.testGameWidget(
+      'init components with the initial state',
+      setUp: (game, _) async {
+        await game.ensureAdd(InventoryComponent());
+      },
+      verify: (game, tester) async {
+        final component = game.firstChild<InventoryComponent>();
+        expect(component?.state, equals(InventoryState.sword));
+      },
+    );
+
+    blocGame.testGameWidget(
+      'Components can be removed',
+      setUp: (game, tester) async {
+        await game.ensureAdd(InventoryComponent());
+      },
+      verify: (game, tester) async {
         expect(game.children.length, 1);
 
-        game.remove(component);
+        final component = game.firstChild<InventoryComponent>();
+        expect(component, isNotNull);
+
+        game.remove(component!);
         game.update(0);
         expect(game.children.length, 0);
       },
     );
 
-    blocGame.widgetTest(
+    blocGame.testGameWidget(
       'components listen to changes',
-      (game, tester) async {
-        final component = InventoryComponent();
-        game.add(component);
+      setUp: (game, _) async {
+        await game.ensureAdd(InventoryComponent());
+      },
+      verify: (game, tester) async {
+        final component = game.firstChild<InventoryComponent>();
         game.read<InventoryCubit>().selectBow();
 
-        expect(component.state, equals(InventoryState.sword));
+        expect(component?.state, equals(InventoryState.sword));
       },
     );
   });

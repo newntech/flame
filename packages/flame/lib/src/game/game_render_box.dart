@@ -1,28 +1,24 @@
+import 'package:flame/src/game/game_loop.dart';
+import 'package:flame/src/game/mixins/game.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart' hide WidgetBuilder;
+//ignore_for_file: unnecessary_non_null_assertion
 
-import '../extensions/size.dart';
-import 'game_loop.dart';
-import 'mixins/game.dart';
-
-// ignore: prefer_mixin
 class GameRenderBox extends RenderBox with WidgetsBindingObserver {
   BuildContext buildContext;
   Game game;
   GameLoop? gameLoop;
 
-  GameRenderBox(this.buildContext, this.game) {
-    WidgetsBinding.instance!.addTimingsCallback(game.onTimingsCallback);
-  }
+  GameRenderBox(this.buildContext, this.game);
 
   @override
   bool get isRepaintBoundary => true;
 
   @override
-  void performResize() {
-    super.performResize();
-    game.onGameResize(constraints.biggest.toVector2());
-  }
+  bool get sizedByParent => true;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
 
   @override
   void attach(PipelineOwner owner) {
@@ -31,8 +27,8 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
 
     final gameLoop = this.gameLoop = GameLoop(gameLoopCallback);
 
-    game.pauseEngineFn = gameLoop.pause;
-    game.resumeEngineFn = gameLoop.resume;
+    game.pauseEngineFn = gameLoop.stop;
+    game.resumeEngineFn = gameLoop.start;
 
     if (!game.paused) {
       gameLoop.start();
@@ -59,11 +55,6 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
   }
 
   @override
-  void performLayout() {
-    size = constraints.biggest;
-  }
-
-  @override
   void paint(PaintingContext context, Offset offset) {
     context.canvas.save();
     context.canvas.translate(offset.dx, offset.dy);
@@ -83,7 +74,4 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     game.lifecycleStateChange(state);
   }
-
-  @override
-  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
 }

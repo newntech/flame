@@ -1,20 +1,17 @@
 import 'dart:ui';
 
-import '../particles/particle.dart';
-import 'component.dart';
+import 'package:flame/src/components/component.dart';
+import 'package:flame/src/particles/particle.dart';
 
 /// Base container for [Particle] instances to be attach
 /// to a [Component] tree. Could be added either to FlameGame
 /// or an implementation of [Component].
 /// Proxies [Component] lifecycle hooks to nested [Particle].
+@Deprecated('Will be removed after v1.1, use ParticleSystemComponent instead')
 class ParticleComponent extends Component {
   Particle particle;
 
   ParticleComponent(this.particle);
-
-  /// This [ParticleComponent] will be removed by the FlameGame.
-  @override
-  bool get shouldRemove => particle.shouldRemove;
 
   /// Returns progress of the child [Particle].
   ///
@@ -32,5 +29,8 @@ class ParticleComponent extends Component {
   @override
   void update(double dt) {
     particle.update(dt);
+    if (particle.shouldRemove) {
+      removeFromParent();
+    }
   }
 }

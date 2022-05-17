@@ -1,4 +1,4 @@
-import 'package:flame/assets.dart';
+import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
@@ -17,7 +17,6 @@ class _ParallaxGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    await super.onLoad();
     parallaxComponent = await loadParallaxComponent(
       [],
       size: parallaxSize,
@@ -48,7 +47,6 @@ class _SlowLoadParallaxGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    await super.onLoad();
     final mockImageCache = MockImages();
 
     void createMockAnswer(int imageNumber, int time) {
@@ -82,8 +80,8 @@ class _SlowLoadParallaxGame extends FlameGame {
 }
 
 void main() {
-  final parallaxGame = FlameTester(() => _ParallaxGame());
-  final slowLoadParallaxGame = FlameTester(() => _SlowLoadParallaxGame());
+  final parallaxGame = FlameTester(_ParallaxGame.new);
+  final slowLoadParallaxGame = FlameTester(_SlowLoadParallaxGame.new);
 
   group('parallax test', () {
     parallaxGame.test(

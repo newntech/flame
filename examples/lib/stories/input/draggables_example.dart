@@ -1,9 +1,8 @@
+import 'package:examples/commons/ember.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart' show Colors;
-
-import '../../commons/ember.dart';
 
 class DraggablesExample extends FlameGame with HasDraggables {
   static const String description = '''
@@ -19,7 +18,6 @@ class DraggablesExample extends FlameGame with HasDraggables {
 
   @override
   Future<void> onLoad() async {
-    await super.onLoad();
     camera.zoom = zoom;
     add(square = DraggableSquare());
     add(DraggableSquare()..y = 350);
@@ -49,13 +47,13 @@ class DraggableSquare extends Ember with Draggable {
   }
 
   @override
-  bool onDragStart(int pointerId, DragStartInfo info) {
+  bool onDragStart(DragStartInfo info) {
     dragDeltaPosition = info.eventPosition.game - position;
     return false;
   }
 
   @override
-  bool onDragUpdate(int pointerId, DragUpdateInfo info) {
+  bool onDragUpdate(DragUpdateInfo info) {
     if (parent is! DraggablesExample) {
       return true;
     }
@@ -69,13 +67,13 @@ class DraggableSquare extends Ember with Draggable {
   }
 
   @override
-  bool onDragEnd(int pointerId, _) {
+  bool onDragEnd(_) {
     dragDeltaPosition = null;
     return false;
   }
 
   @override
-  bool onDragCancel(int pointerId) {
+  bool onDragCancel() {
     dragDeltaPosition = null;
     return false;
   }

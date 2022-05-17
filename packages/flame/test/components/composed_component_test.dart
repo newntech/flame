@@ -39,7 +39,7 @@ class _MyTap extends PositionComponent with Tappable {
   }
 }
 
-class _MyAsyncChild extends _MyTap {
+class _MyAsyncChild extends PositionComponent {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -49,43 +49,46 @@ class _MyAsyncChild extends _MyTap {
 
 void main() {
   final size = Vector2.all(300);
-  final withTappables = FlameTester(() => _HasTappablesGame());
+  final withTappables = FlameTester(_HasTappablesGame.new);
 
   group('Composability', () {
-    withTappables.test('child is not added until the component is prepared',
-        (game) async {
+    testWithFlameGame(
+      'child is not added until the component is prepared',
+      (game) async {
+        final child = Component();
+        final wrapper = Component();
+        await wrapper.add(child);
+
+        expect(child.isLoaded, false);
+        expect(child.isMounted, false);
+        expect(wrapper.contains(child), false);
+
+        await game.ensureAdd(wrapper);
+
+        expect(child.isLoaded, true);
+        expect(child.isMounted, true);
+        expect(wrapper.contains(child), true);
+      },
+    );
+
+    testWithFlameGame('removes the child from the component', (game) async {
       final child = Component();
       final wrapper = Component();
-      await wrapper.add(child);
-
-      expect(child.isPrepared, false);
-      expect(child.isLoaded, false);
-      expect(wrapper.contains(child), false);
-
       await game.ensureAdd(wrapper);
-
-      expect(child.isPrepared, true);
-      expect(child.isLoaded, true);
-      expect(wrapper.contains(child), true);
-    });
-
-    withTappables.test('removes the child from the component', (game) async {
-      final child = Component();
-      final wrapper = Component();
-      await game.ensureAdd(wrapper);
+      expect(wrapper.isMounted, true);
 
       await wrapper.add(child);
       expect(wrapper.contains(child), false);
-      wrapper.updateTree(0); // children are only added on the next tick
+      game.updateTree(0); // children are only added on the next tick
       expect(wrapper.contains(child), true);
 
       wrapper.remove(child);
       expect(wrapper.contains(child), true);
-      wrapper.updateTree(0); // children are only removed on the next tick
+      game.updateTree(0); // children are only removed on the next tick
       expect(wrapper.contains(child), false);
     });
 
-    withTappables.test(
+    testWithFlameGame(
       'when child is async loading, the child is added to the component after '
       'loading',
       (game) async {
@@ -97,7 +100,7 @@ void main() {
         expect(wrapper.contains(child), false);
         await future;
         expect(wrapper.contains(child), false);
-        wrapper.updateTree(0);
+        await game.ready();
         expect(wrapper.contains(child), true);
       },
     );
@@ -116,8 +119,8 @@ void main() {
       expect(child.tapped, true);
     });
 
-    withTappables.test('add multiple children with addAll', (game) async {
-      final children = List.generate(10, (_) => _MyTap());
+    testWithFlameGame('add multiple children with addAll', (game) async {
+      final children = List.generate(10, (_) => _MyAsyncChild());
       final wrapper = Component();
       await wrapper.addAll(children);
 
@@ -179,15 +182,16 @@ void main() {
       final child = _MyTap();
       final wrapper = Component();
 
-      await wrapper.ensureAdd(child);
+      await wrapper.add(child);
       await game.ensureAdd(wrapper);
-      game.render(MockCanvas());
 
-      expect(child.rendered, true);
+      game.update(0);
       expect(child.updated, true);
+      game.render(MockCanvas());
+      expect(child.rendered, true);
     });
 
-    withTappables.test('initially same debugMode as parent', (game) async {
+    testWithFlameGame('initially same debugMode as parent', (game) async {
       final child = Component();
       final wrapper = Component();
       wrapper.debugMode = true;
@@ -199,5 +203,23 @@ void main() {
       wrapper.debugMode = false;
       expect(child.debugMode, true);
     });
+
+    testWithFlameGame(
+      'debugMode propagates to descendants onMount',
+      (game) async {
+        final child = Component();
+        final parent = Component();
+        final grandParent = Component();
+        parent.add(child);
+        grandParent.add(parent);
+        grandParent.debugMode = true;
+
+        await game.ensureAdd(grandParent);
+
+        expect(child.debugMode, true);
+        expect(parent.debugMode, true);
+        expect(grandParent.debugMode, true);
+      },
+    );
   });
 }

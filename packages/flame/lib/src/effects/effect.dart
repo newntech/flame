@@ -1,7 +1,6 @@
+import 'package:flame/components.dart';
+import 'package:flame/src/effects/controllers/effect_controller.dart';
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
-import 'controllers/effect_controller.dart';
 
 /// An [Effect] is a component that changes properties or appearance of another
 /// component over time.
@@ -53,6 +52,11 @@ abstract class Effect extends Component {
   bool _started;
   bool _finished;
 
+  /// The effect's `progress` variable as it was the last time that the
+  /// `apply()` method was called. Mostly used by the derived classes.
+  double get previousProgress => _lastProgress;
+  double _lastProgress = 0;
+
   /// Whether the effect is paused or not.
   ///
   /// By default, the effect will not be paused, even when it is in the
@@ -84,6 +88,7 @@ abstract class Effect extends Component {
     _paused = false;
     _started = false;
     _finished = false;
+    _lastProgress = 0;
   }
 
   @mustCallSuper
@@ -91,6 +96,7 @@ abstract class Effect extends Component {
     controller.setToEnd();
     _started = true;
     _finished = true;
+    _lastProgress = 1;
   }
 
   /// Implementation of [Component]'s `update()` method. Derived classes are
@@ -106,7 +112,9 @@ abstract class Effect extends Component {
     }
     controller.advance(dt);
     if (_started) {
-      apply(controller.progress);
+      final progress = controller.progress;
+      apply(progress);
+      _lastProgress = progress;
     }
     if (!_finished && controller.completed) {
       _finished = true;
@@ -128,7 +136,9 @@ abstract class Effect extends Component {
       onStart();
     }
     if (_started) {
-      apply(controller.progress);
+      final progress = controller.progress;
+      apply(progress);
+      _lastProgress = progress;
     }
     if (!_finished && controller.completed) {
       _finished = true;
@@ -148,7 +158,9 @@ abstract class Effect extends Component {
     }
     final remainingDt = controller.recede(dt);
     if (_started) {
-      apply(controller.progress);
+      final progress = controller.progress;
+      apply(progress);
+      _lastProgress = progress;
     }
     return remainingDt;
   }

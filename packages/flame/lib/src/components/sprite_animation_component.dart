@@ -1,12 +1,14 @@
 import 'dart:ui';
 
+import 'package:flame/components.dart';
+import 'package:flame/src/effects/provider_interfaces.dart';
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
 
 export '../sprite_animation.dart';
 
-class SpriteAnimationComponent extends PositionComponent with HasPaint {
+class SpriteAnimationComponent extends PositionComponent
+    with HasPaint
+    implements SizeProvider {
   /// The animation used by the component.
   SpriteAnimation? animation;
 
@@ -29,6 +31,7 @@ class SpriteAnimationComponent extends PositionComponent with HasPaint {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   })  : removeOnFinish = removeOnFinish ?? false,
         playing = playing ?? true,
@@ -38,6 +41,7 @@ class SpriteAnimationComponent extends PositionComponent with HasPaint {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         ) {
     if (paint != null) {
@@ -75,15 +79,6 @@ class SpriteAnimationComponent extends PositionComponent with HasPaint {
           priority: priority,
         );
 
-  /// Component will be removed after animation is done and [removeOnFinish] is
-  /// set.
-  ///
-  /// Note: [SpriteAnimationComponent] will not be removed automatically if loop
-  /// property of [SpriteAnimation] is true.
-  @override
-  bool get shouldRemove =>
-      super.shouldRemove || (removeOnFinish && (animation?.done() ?? false));
-
   @mustCallSuper
   @override
   void render(Canvas canvas) {
@@ -94,10 +89,14 @@ class SpriteAnimationComponent extends PositionComponent with HasPaint {
         );
   }
 
+  @mustCallSuper
   @override
   void update(double dt) {
     if (playing) {
       animation?.update(dt);
+    }
+    if (removeOnFinish && (animation?.done() ?? false)) {
+      removeFromParent();
     }
   }
 }

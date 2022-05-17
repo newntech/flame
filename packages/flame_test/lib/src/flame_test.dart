@@ -18,14 +18,14 @@ extension FlameGameExtension on Component {
   /// returned future to resolve.
   Future<void> ensureAdd(Component component) async {
     await add(component);
-    updateTree(0);
+    await (component.findGame()! as FlameGame).ready();
   }
 
   /// Makes sure that the [components] are added to the tree if you wait for the
   /// returned future to resolve.
   Future<void> ensureAddAll(Iterable<Component> components) async {
     await addAll(components);
-    updateTree(0);
+    await (components.first.findGame()! as FlameGame).ready();
   }
 }
 
@@ -36,6 +36,10 @@ typedef GameWidgetCreateFunction<T extends Game> = GameWidget<T> Function(
   T game,
 );
 typedef WidgetVerifyFunction<T extends Game> = Future<void> Function(
+  T,
+  WidgetTester,
+);
+typedef WidgetSetupFunction<T extends Game> = Future<void> Function(
   T,
   WidgetTester,
 );
@@ -58,13 +62,18 @@ class GameTester<T extends Game> {
   final GameWidgetCreateFunction<T>? createGameWidget;
 
   /// Use [pumpWidget] to define your own function to pump widgets into
-  /// the Flutter test environment. When omitted, [widgetTest] simply
+  /// the Flutter test environment. When omitted, [testGameWidget] simply
   /// will pass the created game widget instance to the test.
   final PumpWidgetFunction<T>? pumpWidget;
 
   /// Override the game size to be provided during `onGameResize`.
   /// By default it will be a 500x500 square.
   final Vector2? gameSize;
+
+  /// If true, the game will be brought into the "fully ready" state (meaning
+  /// all its pending lifecycle events will be resolved) before the start of
+  /// the test.
+  bool makeReady = true;
 
   GameTester(
     this.createGame, {
@@ -81,6 +90,9 @@ class GameTester<T extends Game> {
 
     await game.onLoad();
     game.update(0);
+    if (game is FlameGame && makeReady) {
+      await game.ready();
+    }
     return game;
   }
 
@@ -90,12 +102,17 @@ class GameTester<T extends Game> {
   @isTest
   void test(
     String description,
-    VerifyFunction<T> verify,
-  ) {
-    flutter_test.test(description, () async {
-      final game = await initializeGame();
-      await verify(game);
-    });
+    VerifyFunction<T> verify, {
+    String? skip,
+  }) {
+    flutter_test.test(
+      description,
+      () async {
+        final game = await initializeGame();
+        await verify(game);
+      },
+      skip: skip,
+    );
   }
 
   /// Creates a [Game] specific test case with given [description]
@@ -103,10 +120,26 @@ class GameTester<T extends Game> {
   ///
   /// Use [verify] closure to make verifications/assertions.
   @isTest
+  @Deprecated('Use testGameWidget instead')
   void widgetTest(
     String description,
     WidgetVerifyFunction<T>? verify,
   ) {
+    testGameWidget(description, verify: verify);
+  }
+
+  /// Creates a [Game] specific test case with given [description]
+  /// which runs inside the Flutter test environment.
+  ///
+  /// Use [setUp] closure to prepare your game instance (e.g. add components to
+  /// it)
+  /// Use [verify] closure to make verifications/assertions.
+  @isTest
+  void testGameWidget(
+    String description, {
+    WidgetSetupFunction<T>? setUp,
+    WidgetVerifyFunction<T>? verify,
+  }) {
     testWidgets(description, (tester) async {
       final game = createGame();
 
@@ -121,10 +154,15 @@ class GameTester<T extends Game> {
         await _pump(gameWidget, tester);
         await tester.pump();
 
-        if (verify != null) {
-          await verify(game, tester);
+        if (setUp != null) {
+          await setUp.call(game, tester);
+          await tester.pump();
         }
       });
+
+      if (verify != null) {
+        await verify(game, tester);
+      }
     });
   }
 
@@ -163,4 +201,4 @@ class FlameTester<T extends FlameGame> extends GameTester<T> {
 
 /// Default instance of Flame Tester to be used when you don't care about
 /// changing any configuration.
-final flameGame = FlameTester<FlameGame>(() => FlameGame());
+final flameGame = FlameTester<FlameGame>(FlameGame.new);

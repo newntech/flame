@@ -1,8 +1,7 @@
+import 'package:flame/components.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/rendering.dart' show EdgeInsets;
 import 'package:meta/meta.dart';
-
-import '../../../components.dart';
-import '../../../input.dart';
 
 /// The [HudButtonComponent] bundles two [PositionComponent]s, one that shows
 /// when the button is being pressed, and one that shows otherwise.
@@ -34,6 +33,7 @@ class HudButtonComponent extends HudMarginComponent with Tappable {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   }) : super(
           margin: margin,
@@ -42,12 +42,14 @@ class HudButtonComponent extends HudMarginComponent with Tappable {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         );
 
   @override
   @mustCallSuper
   void onMount() {
+    super.onMount();
     assert(
       button != null,
       'The button has to either be passed in as an argument or set in onLoad',

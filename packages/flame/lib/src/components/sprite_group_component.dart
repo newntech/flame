@@ -1,14 +1,16 @@
 import 'dart:ui';
 
+import 'package:flame/components.dart';
+import 'package:flame/src/effects/provider_interfaces.dart';
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
 
 export '../sprite_animation.dart';
 
-/// A [PositionComponent] that can have mutiple [Sprite]s and render
+/// A [PositionComponent] that can have multiple [Sprite]s and render
 /// the one mapped with the [current] key.
-class SpriteGroupComponent<T> extends PositionComponent with HasPaint {
+class SpriteGroupComponent<T> extends PositionComponent
+    with HasPaint
+    implements SizeProvider {
   /// Key with the current playing animation
   T? current;
 
@@ -25,6 +27,7 @@ class SpriteGroupComponent<T> extends PositionComponent with HasPaint {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   }) : super(
           position: position,
@@ -32,6 +35,7 @@ class SpriteGroupComponent<T> extends PositionComponent with HasPaint {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         ) {
     if (paint != null) {

@@ -1,13 +1,12 @@
 import 'dart:ui';
 
+import 'package:flame/src/components/component.dart';
+import 'package:flame/src/extensions/vector2.dart';
+import 'package:flame/src/game/camera/camera.dart';
+import 'package:flame/src/game/camera/camera_wrapper.dart';
+import 'package:flame/src/game/mixins/game.dart';
+import 'package:flame/src/game/projector.dart';
 import 'package:meta/meta.dart';
-
-import '../components/component.dart';
-import '../extensions/vector2.dart';
-import 'camera/camera.dart';
-import 'camera/camera_wrapper.dart';
-import 'mixins/game.dart';
-import 'projector.dart';
 
 /// This is a more complete and opinionated implementation of [Game].
 ///
@@ -18,6 +17,11 @@ import 'projector.dart';
 /// It is based on the Flame Component System (also known as FCS).
 class FlameGame extends Component with Game {
   FlameGame({Camera? camera}) {
+    assert(
+      Component.staticGameInstance == null,
+      '$this instantiated, while another game ${Component.staticGameInstance} '
+      'declares itself to be a singleton',
+    );
     _cameraWrapper = CameraWrapper(camera ?? Camera(), children);
   }
 
@@ -34,24 +38,6 @@ class FlameGame extends Component with Game {
   /// This does not match the Flutter widget size; for that see [canvasSize].
   @override
   Vector2 get size => camera.gameSize;
-
-  /// This is the original Flutter widget size, without any transformation.
-  Vector2 get canvasSize => camera.canvasSize;
-
-  /// This method is called for every component before it is added to the
-  /// component tree.
-  /// It does preparation on a component before any update or render method is
-  /// called on it.
-  ///
-  /// You can use this to set up your mixins or pre-calculate things for
-  /// example.
-  /// By default, this calls the first [onGameResize] for every component, so
-  /// don't forget to call `super.prepareComponent` when overriding.
-  @mustCallSuper
-  void prepareComponent(Component c) {
-    // First time resize
-    c.onGameResize(size);
-  }
 
   /// This implementation of render renders each component, making sure the
   /// canvas is reset for each one.
@@ -85,6 +71,7 @@ class FlameGame extends Component with Game {
 
   @override
   void updateTree(double dt) {
+    lifecycle.processQueues();
     children.updateComponentList();
     if (parent != null) {
       update(dt);
@@ -105,14 +92,46 @@ class FlameGame extends Component with Game {
   @override
   @mustCallSuper
   void onGameResize(Vector2 canvasSize) {
+    if (!isMounted) {
+      // TODO(st-pasha): remove this hack, which is for test purposes only
+      setMounted();
+    }
     camera.handleResize(canvasSize);
-    super.onGameResize(canvasSize);
+    super.onGameResize(canvasSize); // Game.onGameResize
+    // [onGameResize] is declared both in [Component] and in [Game]. Since
+    // there is no way to explicitly call the [Component]'s implementation,
+    // we propagate the event to [FlameGame]'s children manually.
+    handleResize(canvasSize);
+  }
+
+  /// Ensure that all pending tree operations finish.
+  ///
+  /// This is mainly intended for testing purposes: awaiting on this future
+  /// ensures that the game is fully loaded, and that all pending operations
+  /// of adding the components into the tree are fully materialized.
+  ///
+  /// Warning: awaiting on a game that was not fully connected will result in an
+  /// infinite loop. For example, this could occur if you run `x.add(y)` but
+  /// then forget to mount `x` into the game.
+  Future<void> ready() async {
+    var repeat = true;
+    while (repeat) {
+      // Give chance to other futures to execute first
+      await Future<void>.delayed(const Duration());
+      repeat = false;
+      descendants(includeSelf: true).forEach(
+        (Component child) {
+          child.processPendingLifecycleEvents();
+          repeat |= child.hasPendingLifecycleEvents;
+        },
+      );
+    }
   }
 
   /// Whether a point is within the boundaries of the visible part of the game.
   @override
-  bool containsPoint(Vector2 p) {
-    return p.x > 0 && p.y > 0 && p.x < size.x && p.y < size.y;
+  bool containsLocalPoint(Vector2 p) {
+    return p.x >= 0 && p.y >= 0 && p.x < size.x && p.y < size.y;
   }
 
   /// Returns the current time in seconds with microseconds precision.

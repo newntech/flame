@@ -1,20 +1,19 @@
 import 'dart:math';
 
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
-import 'package:flame/src/effects/controllers/effect_controller.dart';
-import 'package:flame/src/effects/size_effect.dart';
 import 'package:flame_test/flame_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SizeEffect', () {
-    flameGame.test('relative', (game) {
-      final component = PositionComponent();
-      game.ensureAdd(component);
+    flameGame.test('relative', (game) async {
+      final component = ResizableComponent();
+      await game.ensureAdd(component);
 
       component.size = Vector2.all(1.0);
-      component.add(
+      await component.add(
         SizeEffect.by(Vector2.all(1.0), EffectController(duration: 1)),
       );
       game.update(0);
@@ -31,12 +30,12 @@ void main() {
       expect(component.size, closeToVector(2, 2));
     });
 
-    flameGame.test('absolute', (game) {
-      final component = PositionComponent();
-      game.ensureAdd(component);
+    flameGame.test('absolute', (game) async {
+      final component = ResizableComponent();
+      await game.ensureAdd(component);
 
       component.size = Vector2.all(1.0);
-      component.add(
+      await component.add(
         SizeEffect.to(Vector2.all(3.0), EffectController(duration: 1)),
       );
       game.update(0);
@@ -53,15 +52,15 @@ void main() {
       expect(component.size, closeToVector(3, 3));
     });
 
-    flameGame.test('reset relative', (game) {
-      final component = PositionComponent();
-      game.ensureAdd(component);
+    flameGame.test('reset relative', (game) async {
+      final component = ResizableComponent();
+      await game.ensureAdd(component);
 
       final effect = SizeEffect.by(
         Vector2.all(1.0),
         EffectController(duration: 1),
       );
-      component.add(effect..removeOnFinish = false);
+      await component.add(effect..removeOnFinish = false);
       final expectedSize = Vector2.zero();
       for (var i = 0; i < 5; i++) {
         // After each reset the object will be sized up by Vector2(1, 1)
@@ -74,7 +73,7 @@ void main() {
     });
 
     flameGame.test('reset absolute', (game) {
-      final component = PositionComponent();
+      final component = ResizableComponent();
       game.ensureAdd(component);
 
       final effect = SizeEffect.to(
@@ -92,14 +91,14 @@ void main() {
       }
     });
 
-    flameGame.test('size composition', (game) {
-      final component = PositionComponent();
-      game.ensureAdd(component);
+    flameGame.test('size composition', (game) async {
+      final component = ResizableComponent();
+      await game.ensureAdd(component);
 
-      component.add(
+      await component.add(
         SizeEffect.by(Vector2.all(5), EffectController(duration: 10)),
       );
-      component.add(
+      await component.add(
         SizeEffect.by(
           Vector2.all(0.5),
           EffectController(
@@ -121,10 +120,10 @@ void main() {
       expect(component.children.length, 0);
     });
 
-    testRandom('a very long size change', (Random rng) {
+    testRandom('a very long size change', (Random rng) async {
       final game = FlameGame()..onGameResize(Vector2(1, 1));
-      final component = PositionComponent();
-      game.ensureAdd(component);
+      final component = ResizableComponent();
+      await game.ensureAdd(component);
 
       final effect = SizeEffect.by(
         Vector2.all(1.0),
@@ -134,7 +133,7 @@ void main() {
           infinite: true,
         ),
       );
-      component.add(effect);
+      await component.add(effect);
 
       var totalTime = 0.0;
       while (totalTime < 999.9) {
@@ -149,3 +148,5 @@ void main() {
     });
   });
 }
+
+class ResizableComponent extends PositionComponent implements SizeProvider {}

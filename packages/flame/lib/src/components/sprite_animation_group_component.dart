@@ -1,12 +1,14 @@
 import 'dart:ui';
 
+import 'package:flame/components.dart';
+import 'package:flame/src/effects/provider_interfaces.dart';
 import 'package:meta/meta.dart';
-
-import '../../components.dart';
 
 export '../sprite_animation.dart';
 
-class SpriteAnimationGroupComponent<T> extends PositionComponent with HasPaint {
+class SpriteAnimationGroupComponent<T> extends PositionComponent
+    with HasPaint
+    implements SizeProvider {
   /// Key with the current playing animation
   T? current;
 
@@ -27,6 +29,7 @@ class SpriteAnimationGroupComponent<T> extends PositionComponent with HasPaint {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   })  : removeOnFinish = removeOnFinish ?? const {},
         super(
@@ -35,6 +38,7 @@ class SpriteAnimationGroupComponent<T> extends PositionComponent with HasPaint {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         ) {
     if (paint != null) {
@@ -83,18 +87,6 @@ class SpriteAnimationGroupComponent<T> extends PositionComponent with HasPaint {
 
   SpriteAnimation? get animation => animations?[current];
 
-  /// Component will be removed after animation is done and the current state
-  /// is true on [removeOnFinish].
-  ///
-  /// Note: [SpriteAnimationGroupComponent] will not be removed automatically if
-  /// loop property of [SpriteAnimation] of the current state is true.
-  @override
-  bool get shouldRemove {
-    final stateRemoveOnFinish = removeOnFinish[current] ?? false;
-    return super.shouldRemove ||
-        (stateRemoveOnFinish && (animation?.done() ?? false));
-  }
-
   @mustCallSuper
   @override
   void render(Canvas canvas) {
@@ -105,8 +97,12 @@ class SpriteAnimationGroupComponent<T> extends PositionComponent with HasPaint {
         );
   }
 
+  @mustCallSuper
   @override
   void update(double dt) {
     animation?.update(dt);
+    if ((removeOnFinish[current] ?? false) && (animation?.done() ?? false)) {
+      removeFromParent();
+    }
   }
 }

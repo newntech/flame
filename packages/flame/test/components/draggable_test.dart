@@ -12,42 +12,38 @@ class _DraggableComponent extends PositionComponent with Draggable {
   bool hasCanceledDragging = false;
 
   @override
-  bool onDragStart(int pointerId, DragStartInfo info) {
+  bool onDragStart(DragStartInfo info) {
     hasStartedDragging = true;
     return true;
   }
 
   @override
-  bool onDragCancel(int pointerId) {
+  bool onDragCancel() {
     hasCanceledDragging = true;
     return true;
   }
 }
 
 void main() {
-  final withDraggables = FlameTester(() => _GameHasDraggables());
+  final withDraggables = FlameTester(_GameHasDraggables.new);
 
   group('Draggables', () {
     withDraggables.test(
       'make sure they can be added to game with HasDraggables',
       (game) async {
         await game.add(_DraggableComponent());
+        await game.ready();
       },
     );
 
     flameGame.test(
       'make sure they cannot be added to invalid games',
       (game) async {
-        const message =
-            'Draggable Components can only be added to a FlameGame with '
-            'HasDraggables';
-
         expect(
-          () => game.add(_DraggableComponent()),
-          throwsA(
-            predicate(
-              (e) => e is AssertionError && e.message == message,
-            ),
+          () => game.ensureAdd(_DraggableComponent()),
+          failsAssert(
+            'Draggable Components can only be added to a FlameGame with '
+            'HasDraggables',
           ),
         );
       },

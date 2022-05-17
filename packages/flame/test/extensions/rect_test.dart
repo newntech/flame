@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flame/extensions.dart';
+import 'package:flame_test/flame_test.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -27,14 +28,23 @@ void main() {
       expect(r2.height, r1.height);
     });
 
-    test('test from ui Rect to geometry Rectangle', () {
+    test('test from ui Rect to RectangleComponent', () {
       const r1 = Rect.fromLTWH(0, 10, 20, 30);
-      final r2 = r1.toGeometryRectangle();
+      final r2 = r1.toRectangleComponent();
       expect(r2.angle, 0);
-      expect(r2.size.x, r1.width);
-      expect(r2.size.y, r1.height);
       expect(r2.position.x, r1.left);
       expect(r2.position.y, r1.top);
+      expect(r2.size.x, r1.width);
+      expect(r2.size.y, r1.height);
+    });
+
+    test('test transform', () {
+      final matrix4 = Matrix4.translation(Vector3(10, 10, 0));
+      const input = Rect.fromLTWH(0, 0, 10, 10);
+      final result = input.transform(matrix4);
+
+      expect(result.topLeft.toVector2(), closeToVector(10, 10));
+      expect(result.bottomRight.toVector2(), closeToVector(20, 20));
     });
   });
 }

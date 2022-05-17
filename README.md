@@ -17,7 +17,7 @@ A Flutter-based game engine.
 
 ---
 
-[English](/README.md) | [简体中文](/i18n/README-ZH.md) | [Polski](/i18n/README-PL.md) | [Русский](/i18n/README-RU.md) | [Español](/i18n/README-ES.md)
+[English](/README.md) | [简体中文](/i18n/README-ZH.md) | [Polski](/i18n/README-PL.md) | [Русский](/i18n/README-RU.md) | [Español](/i18n/README-ES.md) | [日本語](/i18n/README-JA.md)
 
 ---
 
@@ -94,6 +94,8 @@ Flame officially provides bridge libraries to the following packages:
 ## Sponsors
 
 The Flame Engine's top sponsors:
+
+[![Very Good Ventures](/media/unicorn_two_toned.png)](https://verygood.ventures/)
 
 [![Cypher Stack](/media/logo_cypherstack.png)](https://cypherstack.com/)
 

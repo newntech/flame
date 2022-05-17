@@ -1,7 +1,6 @@
+import 'package:flame/components.dart';
+import 'package:flame/input.dart';
 import 'package:meta/meta.dart';
-
-import '../../../components.dart';
-import '../../../input.dart';
 
 /// The [ButtonComponent] bundles two [PositionComponent]s, one that shows while
 /// the button is being pressed, and one that shows otherwise.
@@ -26,6 +25,7 @@ class ButtonComponent extends PositionComponent with Tappable {
     Vector2? scale,
     double? angle,
     Anchor? anchor,
+    Iterable<Component>? children,
     int? priority,
   }) : super(
           position: position,
@@ -33,12 +33,14 @@ class ButtonComponent extends PositionComponent with Tappable {
           scale: scale,
           angle: angle,
           anchor: anchor,
+          children: children,
           priority: priority,
         );
 
   @override
   @mustCallSuper
   void onMount() {
+    super.onMount();
     assert(
       button != null,
       'The button has to either be passed in as an argument or set in onLoad',
