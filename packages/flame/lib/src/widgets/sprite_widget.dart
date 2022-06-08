@@ -31,7 +31,8 @@ class SpriteWidget extends StatelessWidget {
   /// A builder function that is called while the loading is on the way
   final WidgetBuilder? loadingBuilder;
 
-  late Future<Sprite> _spriteFuture;
+  final Future<Sprite>? _spriteFuture;
+  final Sprite? _sprite;
 
   const SpriteWidget({
     required Sprite sprite,
@@ -39,12 +40,11 @@ class SpriteWidget extends StatelessWidget {
     this.angle = 0,
     this.srcPosition,
     this.srcSize,
-    this.errorBuilder,
-    this.loadingBuilder,
-    Key? key,
-  }) : super(key: key) {
-    _spriteFuture = Future.value(sprite);
-  }
+    super.key,
+  })  : _sprite = sprite,
+        errorBuilder = null,
+        loadingBuilder = null,
+        _spriteFuture = null;
 
   /// Load the image from the asset [path] and renders it as a widget.
   ///
@@ -61,30 +61,35 @@ class SpriteWidget extends StatelessWidget {
     this.srcSize,
     this.errorBuilder,
     this.loadingBuilder,
-    Key? key,
+    super.key,
   })  : _spriteFuture = Sprite.load(
           path,
           srcSize: srcSize,
           srcPosition: srcPosition,
           images: images,
         ),
-        super(key: key);
+        _sprite = null;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Sprite>(
-      future: _spriteFuture,
-      builder: (_, snapshot) {
-        if (snapshot.hasData) {
-          return _SpriteWidget(
-            sprite: snapshot.data!,
+    return _sprite != null
+        ? InternalSpriteWidget(
+            sprite: _sprite!,
             anchor: anchor,
             angle: angle,
+          )
+        : FutureBuilder<Sprite>(
+            future: _spriteFuture,
+            builder: (_, sprite) {
+              return sprite.hasData
+                  ? InternalSpriteWidget(
+                      sprite: sprite.data!,
+                      anchor: anchor,
+                      angle: angle,
+                    )
+                  : const SizedBox();
+            },
           );
-        }
-        return Container();
-      },
-    );
   }
 }
 
