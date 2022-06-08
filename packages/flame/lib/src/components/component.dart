@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:flame/src/cache/value_cache.dart';
-import 'package:flame/src/components/component_point_pair.dart';
 import 'package:flame/src/components/component_set.dart';
 import 'package:flame/src/components/mixins/coordinate_transform.dart';
 import 'package:flame/src/components/position_type.dart';
@@ -205,26 +205,18 @@ class Component {
   void _setRemovingBit() => _state |= _removing;
   void _clearRemovingBit() => _state &= ~_removing;
 
-  Completer<void>? _mountCompleter;
-  Completer<void>? _loadCompleter;
+  /// A future that completes when this component finishes loading.
+  ///
+  /// If the component is already loaded (see [isLoaded]), this returns an
+  /// already completed future.
+  Future<void> get loaded => isLoaded ? Future.value() : lifecycle.loadFuture;
 
-  /// A future that will complete once this component has finished loading.
-  Future<void> get loaded {
-    if (isLoaded) {
-      return Future.value();
-    }
-    _loadCompleter ??= Completer<void>();
-    return _loadCompleter!.future;
-  }
-
-  /// A future that will complete once the component is mounted on its parent
-  Future<void> get mounted {
-    if (isMounted) {
-      return Future.value();
-    }
-    _mountCompleter ??= Completer<void>();
-    return _mountCompleter!.future;
-  }
+  /// A future that will complete once the component is mounted on its parent.
+  ///
+  /// If the component is already mounted (see [isMounted]), this returns an
+  /// already completed future.
+  Future<void> get mounted =>
+      isMounted ? Future.value() : lifecycle.mountFuture;
 
   //#endregion
 
@@ -242,8 +234,10 @@ class Component {
   set parent(Component? newParent) {
     if (newParent == null) {
       removeFromParent();
+    } else if (_parent == null) {
+      addToParent(newParent);
     } else {
-      changeParent(newParent);
+      newParent.lifecycle._adoption.add(this);
     }
   }
 
@@ -259,7 +253,7 @@ class Component {
   /// `Component.childrenFactory` is the default method for creating children
   /// containers within all components. Replace this method if you want to have
   /// customized (non-default) [ComponentSet] instances in your project.
-  static ComponentSetFactory childrenFactory = ComponentSet.createDefault;
+  static ComponentSetFactory childrenFactory = ComponentSet.new;
 
   /// This method creates the children container for the current component.
   /// Override this method if you need to have a custom [ComponentSet] within
@@ -269,22 +263,19 @@ class Component {
   /// Returns the closest parent further up the hierarchy that satisfies type=T,
   /// or null if no such parent can be found.
   T? findParent<T extends Component>() {
-    return (_parent is T ? _parent : _parent?.findParent<T>()) as T?;
+    return ancestors().whereType<T>().firstOrNull;
   }
 
-  /// Returns the first child that matches the given type [T].
-  ///
-  /// As opposed to `children.whereType<T>().first`, this method returns null
-  /// instead of a [StateError] when no matching children are found.
+  /// Returns the first child that matches the given type [T], or null if there
+  /// are no such children.
   T? firstChild<T extends Component>() {
-    final it = children.whereType<T>().iterator;
-    return it.moveNext() ? it.current : null;
+    return children.whereType<T>().firstOrNull;
   }
 
-  /// Returns the last child that matches the given type [T].
+  /// Returns the last child that matches the given type [T], or null if there
+  /// are no such children.
   T? lastChild<T extends Component>() {
-    final it = children.reversed().whereType<T>().iterator;
-    return it.moveNext() ? it.current : null;
+    return children.reversed().whereType<T>().firstOrNull;
   }
 
   /// An iterator producing this component's parent, then its parent's parent,
@@ -592,27 +583,10 @@ class Component {
     _parent?.remove(this);
   }
 
-  /// Whether this component should be removed or not.
-  ///
-  /// It will be checked once per component per tick, and if it is true,
-  /// FlameGame will remove it.
-  @nonVirtual
-  bool get shouldRemove => isRemoving;
-
-  /// Setting [shouldRemove] to true will schedule the component to be removed
-  /// from the game tree before the next game cycle.
-  ///
-  /// This property is equivalent to using the method [removeFromParent].
-  @nonVirtual
-  set shouldRemove(bool value) {
-    assert(value, '"Resurrecting" a component is not allowed');
-    removeFromParent();
-  }
-
   /// Changes the current parent for another parent and prepares the tree under
   /// the new root.
   void changeParent(Component newParent) {
-    newParent.lifecycle._adoption.add(this);
+    parent = newParent;
   }
 
   //#endregion
@@ -641,9 +615,13 @@ class Component {
   /// that intersect with this ray, in the order from those that are closest to
   /// the user to those that are farthest.
   ///
-  /// The return value is an [Iterable] of `(component, point)` pairs, which
-  /// gives not only the components themselves, but also the points of
-  /// intersection, in their respective local coordinates.
+  /// The return value is an [Iterable] of components. If the [nestedPoints]
+  /// parameter is given, then it will also report the points of intersection
+  /// for each component in its local coordinate space. Specifically, the last
+  /// element in the list is the point in the coordinate space of the returned
+  /// component, the element before the last is in that component's parent's
+  /// coordinate space, and so on. The [nestedPoints] list must be growable and
+  /// modifiable.
   ///
   /// The default implementation relies on the [CoordinateTransform] interface
   /// to translate from the parent's coordinate system into the local one. Make
@@ -653,7 +631,11 @@ class Component {
   /// If your component overrides [renderTree], then it almost certainly needs
   /// to override this method as well, so that this method can find all rendered
   /// components wherever they are.
-  Iterable<ComponentPointPair> componentsAtPoint(Vector2 point) sync* {
+  Iterable<Component> componentsAtPoint(
+    Vector2 point, [
+    List<Vector2>? nestedPoints,
+  ]) sync* {
+    nestedPoints?.add(point);
     if (_children != null) {
       for (final child in _children!.reversed()) {
         Vector2? childPoint = point;
@@ -661,13 +643,14 @@ class Component {
           childPoint = (child as CoordinateTransform).parentToLocal(point);
         }
         if (childPoint != null) {
-          yield* child.componentsAtPoint(childPoint);
+          yield* child.componentsAtPoint(childPoint, nestedPoints);
         }
       }
     }
     if (containsLocalPoint(point)) {
-      yield ComponentPointPair(this, point);
+      yield this;
     }
+    nestedPoints?.removeLast();
   }
 
   //#endregion
@@ -762,8 +745,7 @@ class Component {
 
   void _finishLoading() {
     _setLoadedBit();
-    _loadCompleter?.complete();
-    _loadCompleter = null;
+    _lifecycleManager?.finishLoading();
   }
 
   /// Mount the component that is already loaded and has a mounted parent.
@@ -790,8 +772,7 @@ class Component {
     debugMode |= _parent!.debugMode;
     onMount();
     _setMountedBit();
-    _mountCompleter?.complete();
-    _mountCompleter = null;
+    _lifecycleManager?.finishMounting();
     if (!existingChild) {
       _parent!.children.add(this);
     }
@@ -917,6 +898,29 @@ class _LifecycleManager {
   /// The component which is the owner of this [_LifecycleManager].
   final Component owner;
 
+  Completer<void>? _mountCompleter;
+  Completer<void>? _loadCompleter;
+
+  Future<void> get loadFuture {
+    _loadCompleter ??= Completer<void>();
+    return _loadCompleter!.future;
+  }
+
+  Future<void> get mountFuture {
+    _mountCompleter ??= Completer<void>();
+    return _mountCompleter!.future;
+  }
+
+  void finishLoading() {
+    _loadCompleter?.complete();
+    _loadCompleter = null;
+  }
+
+  void finishMounting() {
+    _mountCompleter?.complete();
+    _mountCompleter = null;
+  }
+
   /// Queue for adding children to a component.
   ///
   /// When the user `add()`s a child to a component, we immediately place it
@@ -941,7 +945,11 @@ class _LifecycleManager {
   final Queue<Component> _adoption = Queue();
 
   bool get hasPendingEvents {
-    return !(_children.isEmpty && _removals.isEmpty && _adoption.isEmpty);
+    return _children.isNotEmpty ||
+        _removals.isNotEmpty ||
+        _adoption.isNotEmpty ||
+        _mountCompleter != null ||
+        _loadCompleter != null;
   }
 
   /// Attempt to resolve pending events in all lifecycle event queues.
