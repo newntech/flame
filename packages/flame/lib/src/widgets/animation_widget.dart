@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:ffi';
+import 'dart:math';
 
 import 'package:flame/src/anchor.dart';
 import 'package:flame/src/cache/images.dart';
@@ -17,7 +19,8 @@ class SpriteAnimationWidget extends StatelessWidget {
   /// Should the animation be playing or not
   final bool playing;
 
-  final FutureOr<SpriteAnimation> _animationFuture;
+  final Future<SpriteAnimation>? _animationFuture;
+  final SpriteAnimation? _animation;
 
   /// A builder function that is called if the loading fails
   final WidgetBuilder? errorBuilder;
@@ -30,7 +33,8 @@ class SpriteAnimationWidget extends StatelessWidget {
     this.playing = true,
     this.anchor = Anchor.topLeft,
     super.key,
-  })  : _animationFuture = animation,
+  })  : _animationFuture = null,
+        _animation = animation,
         errorBuilder = null,
         loadingBuilder = null;
 
@@ -49,26 +53,32 @@ class SpriteAnimationWidget extends StatelessWidget {
     this.errorBuilder,
     this.loadingBuilder,
     super.key,
-  }) : _animationFuture = SpriteAnimation.load(
+  })  : _animationFuture = SpriteAnimation.load(
           path,
           data,
           images: images,
-        );
+        ),
+        _animation = null;
 
   @override
   Widget build(BuildContext context) {
-    return BaseFutureBuilder<SpriteAnimation>(
-      future: _animationFuture,
-      builder: (_, spriteAnimation) {
-        return InternalSpriteAnimationWidget(
-          animation: spriteAnimation,
-          anchor: anchor,
-          playing: playing,
-        );
-      },
-      errorBuilder: errorBuilder,
-      loadingBuilder: loadingBuilder,
-    );
+    return _animation != null
+        ? InternalSpriteAnimationWidget(
+            animation: _animation!,
+            anchor: anchor,
+            playing: playing,
+          )
+        : FutureBuilder<SpriteAnimation>(
+            future: _animationFuture,
+            builder: (_, snapshot) {
+              return snapshot.hasData
+                  ? InternalSpriteAnimationWidget(
+                      animation: snapshot.data!,
+                      anchor: anchor,
+                      playing: playing,
+                    )
+                  : const SizedBox();
+            });
   }
 }
 
@@ -96,8 +106,7 @@ class InternalSpriteAnimationWidget extends StatefulWidget {
 }
 
 class _InternalSpriteAnimationWidgetState
-    extends State<InternalSpriteAnimationWidget>
-    with SingleTickerProviderStateMixin {
+    extends State<InternalSpriteAnimationWidget> with TickerProviderStateMixin {
   AnimationController? _controller;
   double? _lastUpdated;
 
