@@ -42,7 +42,7 @@ Possible uses:
 ```{flutter-app}
 :sources: ../flame/examples
 :page: decorator_grayscale
-:show: widget infobox
+:show: widget code infobox
 :width: 180
 :height: 160
 ```
@@ -66,7 +66,7 @@ Possible uses:
 ```{flutter-app}
 :sources: ../flame/examples
 :page: decorator_tint
-:show: widget infobox
+:show: widget code infobox
 :width: 180
 :height: 160
 ```
@@ -92,7 +92,7 @@ Possible uses:
 ```{flutter-app}
 :sources: ../flame/examples
 :page: decorator_rotate3d
-:show: widget infobox
+:show: widget code infobox
 :width: 180
 :height: 160
 ```
@@ -119,6 +119,39 @@ Possible uses:
 - 3d falling particles such as snowflakes or leaves.
 
 
+### Shadow3DDecorator
+
+```{flutter-app}
+:sources: ../flame/examples
+:page: decorator_shadow3d
+:show: widget code infobox
+:width: 180
+:height: 160
+```
+
+This decorator renders a shadow underneath the component, as if the component was a 3D object
+standing on a plane. This effect works best for games that use isometric camera projection.
+
+The shadow produced by this generator is quite flexible: you can control its angle, length, opacity,
+blur, etc. For a full description of what properties this decorator has and their meaning, see the
+class documentation.
+
+```dart
+final decorator = Shadow3DDecorator(
+  base: Vector2(100, 150),
+  angle: -1.4,
+  xShift: 200,
+  yScale: 1.5,
+  opacity: 0.5,
+  blur: 1.5,
+);
+```
+
+The primary purpose of this decorator is to add shadows on the ground to your components. The main
+limitation is that the shadows are flat and cannot interact with the environment. For example, this
+decorator cannot handle shadows that fall onto walls or other vertical structures.
+
+
 ## Using decorators
 
 ### HasDecorator mixin
@@ -127,6 +160,33 @@ This `Component` mixin adds the `decorator` property, which is initially `null`.
 property to an actual `Decorator` object, then that decorator will apply its visual effect during
 the rendering of the component. In order to remove this visual effect, simply set the `decorator`
 property back to `null`.
+
+
+### PositionComponent
+
+`PositionComponent` (and all the derived classes) already has a `decorator` property, so for these
+components the `HasDecorator` mixin is not needed.
+
+In fact, the `PositionComponent` uses its decorator in order to properly position the component on
+the screen. Thus, any new decorators that you'd want to apply to the `PositionComponent` will need
+to be chained (see the [](#multiple-decorators) section below).
+
+It is also possible to replace the root decorator of the `PositionComponent`, if you want to create
+an alternative logic for how the component shall be positioned on the screen.
+
+
+### Multiple decorators
+
+It is possible to apply several decorators simultaneously to the same component: the `Decorator`
+class supports chaining. That is, if you have an existing decorator on a component and you want to
+add another one, then you can call `component.decorator.addLast(newDecorator)` -- this will add
+the new decorator at the end of the existing chain. The method `removeLast()` can remove that
+decorator later.
+
+Several decorators can be chain that way. For example, if `A` is an initial decorator, then
+`A.addLast(B)` can be followed by either `A.addLast(C)` or `B.addLast(C)` -- and in both cases the
+chain `A -> B -> C` will be created. In practice, it means that the entire chain can be manipulated
+from its root, which usually is `component.decorator`.
 
 
 

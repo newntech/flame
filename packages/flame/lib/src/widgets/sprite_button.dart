@@ -189,6 +189,9 @@ class _ButtonState extends State<InternalSpriteButton> {
 
         widget.onPressed.call();
       },
+      onTapCancel: () {
+        setState(() => _pressed = false);
+      },
       child: Container(
         width: width,
         height: height,
