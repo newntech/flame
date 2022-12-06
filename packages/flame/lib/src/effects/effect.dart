@@ -5,11 +5,11 @@ import 'package:meta/meta.dart';
 /// An [Effect] is a component that changes properties or appearance of another
 /// component over time.
 ///
-/// For example, suppose you have an object "Foo", and you want to move it
+/// For example, suppose you have an object "Goo", and you want to move it
 /// to some other point on the screen. Directly changing that object's position
 /// will cause it to teleport to the new location, which is likely undesired.
-/// A second approach that you can take is to modify Foo's `update()` method
-/// to implement the logic that will move Foo to the new position smoothly.
+/// A second approach that you can take is to modify Goo's `update()` method
+/// to implement the logic that will move Goo to the new position smoothly.
 /// However, implementing such logic for every component that you may need to
 /// move is cumbersome. A better approach then is to implement that logic as a
 /// separate "movement" component that can attach to Foo or to any other
@@ -46,14 +46,6 @@ abstract class Effect extends Component {
 
   /// Optional callback function to be invoked once the effect completes.
   void Function()? onComplete;
-
-  @Deprecated('It will be removed in v1.3.0. Use Effect.onComplete instead')
-  void Function()? get onFinishCallback => onComplete;
-
-  @Deprecated('It will be removed in v1.3.0. Use Effect.onComplete instead')
-  set onFinishCallback(void Function()? callback) {
-    onComplete = callback;
-  }
 
   /// Boolean indicators of the effect's state, their purpose is to ensure that
   /// the `onStart()` and `onFinish()` callbacks are called exactly once.
@@ -138,11 +130,11 @@ abstract class Effect extends Component {
   /// similar to `EffectController.advance`.
   @internal
   double advance(double dt) {
-    final remainingDt = controller.advance(dt);
     if (!_started && controller.started) {
       _started = true;
       onStart();
     }
+    final remainingDt = controller.advance(dt);
     if (_started) {
       final progress = controller.progress;
       apply(progress);

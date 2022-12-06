@@ -32,7 +32,7 @@ class PadracingWidget extends StatelessWidget {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          primary: Colors.black,
+          backgroundColor: Colors.black,
           minimumSize: const Size(150, 50),
         ),
       ),
@@ -64,7 +64,7 @@ class PadracingWidget extends StatelessWidget {
         ),
         overlayBuilderMap: {
           'menu': (_, game) => Menu(game),
-          'gameover': (_, game) => GameOver(game),
+          'game_over': (_, game) => GameOver(game),
         },
         initialActiveOverlays: const ['menu'],
       ),

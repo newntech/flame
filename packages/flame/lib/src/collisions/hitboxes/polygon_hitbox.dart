@@ -8,9 +8,13 @@ class PolygonHitbox extends PolygonComponent
     with ShapeHitbox, PolygonRayIntersection {
   PolygonHitbox(
     super.vertices, {
+    super.position,
     super.angle,
     super.anchor,
-  });
+    bool isSolid = false,
+  }) {
+    this.isSolid = isSolid;
+  }
 
   /// With this constructor you define the [PolygonHitbox] in relation to the
   /// [parentSize] of the hitbox.
@@ -25,9 +29,12 @@ class PolygonHitbox extends PolygonComponent
     required super.parentSize,
     double super.angle = 0,
     super.anchor,
+    bool isSolid = false,
   }) : super.relative(
           shrinkToBounds: true,
-        );
+        ) {
+    this.isSolid = isSolid;
+  }
 
   @override
   void fillParent() {

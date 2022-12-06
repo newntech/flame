@@ -7,8 +7,9 @@ import 'package:flame/geometry.dart';
 ///
 /// If the [HasCollisionDetection] mixin is added to the game, [run] is
 /// called every tick to check for collisions
-abstract class CollisionDetection<T extends Hitbox<T>> {
-  final Broadphase<T> broadphase;
+abstract class CollisionDetection<T extends Hitbox<T>,
+    B extends Broadphase<T>> {
+  final B broadphase;
   List<T> get items => broadphase.items;
   final Set<CollisionProspect<T>> _lastPotentials = {};
 
@@ -70,6 +71,9 @@ abstract class CollisionDetection<T extends Hitbox<T>> {
   /// Returns the first hitbox that the given [ray] hits and the associated
   /// intersection information; or null if the ray doesn't hit any hitbox.
   ///
+  /// [maxDistance] can be provided to limit the raycast to only return hits
+  /// within this distance from the ray origin.
+  ///
   /// [ignoreHitboxes] can be used if you want to ignore certain hitboxes, i.e.
   /// the rays will go straight through them. For example the hitbox of the
   /// component that you might be casting the rays from.
@@ -78,6 +82,7 @@ abstract class CollisionDetection<T extends Hitbox<T>> {
   /// result.
   RaycastResult<T>? raycast(
     Ray2 ray, {
+    double? maxDistance,
     List<T>? ignoreHitboxes,
     RaycastResult<T>? out,
   });
@@ -86,6 +91,9 @@ abstract class CollisionDetection<T extends Hitbox<T>> {
   /// from the given [origin] and returns all hitboxes and intersection points
   /// the rays hit.
   /// [numberOfRays] is the number of rays that should be casted.
+  ///
+  /// [maxDistance] can be provided to limit the raycasts to only return hits
+  /// within this distance from the ray origin.
   ///
   /// If the [rays] argument is provided its [Ray2]s are populated with the rays
   /// needed to perform the operation.
@@ -104,6 +112,7 @@ abstract class CollisionDetection<T extends Hitbox<T>> {
     required int numberOfRays,
     double startAngle = 0,
     double sweepAngle = tau,
+    double? maxDistance,
     List<Ray2>? rays,
     List<T>? ignoreHitboxes,
     List<RaycastResult<T>>? out,

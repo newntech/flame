@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../components/component_test.dart';
 import 'projector_test.dart';
 
 void main() {
@@ -19,6 +20,21 @@ void main() {
         expect(game.size, Vector2(100.0, 200.00));
       },
     );
+
+    test('game resize in zoomed game', () async {
+      final game = FlameGame()
+        ..camera.zoom = 10
+        ..onGameResize(Vector2(300, 200));
+      final component = ComponentWithSizeHistory();
+      game.add(component);
+      await game.ready();
+
+      game.onGameResize(Vector2(400, 500));
+      expect(
+        component.history,
+        equals([Vector2(300, 200), Vector2(400, 500)]),
+      );
+    });
 
     testWithFlameGame('Game in game', (game) async {
       final innerGame = FlameGame();
@@ -86,7 +102,7 @@ void main() {
           await tester.pumpWidget(
             Builder(
               builder: (BuildContext context) {
-                renderBox = GameRenderBox(context, game);
+                renderBox = GameRenderBox(game, context);
                 return GameWidget(game: game);
               },
             ),
@@ -379,7 +395,7 @@ void main() {
             game.projector.unprojectVector(Vector2.all(5)),
             Vector2.all(-100),
           );
-          // TODO(luan): we might want to change the behaviour so that the zoom
+          // TODO(luan): we might want to change the behavior so that the zoom
           // is applied w.r.t. the relativeOffset and not topLeft
 
           // For deltas, we consider only the zoom.

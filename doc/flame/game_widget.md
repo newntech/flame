@@ -1,4 +1,4 @@
-# GameWidget
+# Game Widget
 
 The `GameWidget` is a Flutter `Widget` that is used to insert a [`Game`](game.md) inside the Flutter
 widget tree.
@@ -6,6 +6,7 @@ widget tree.
 It can directly receive a `Game` instance in its default constructor or it can receive a
 `GameFactory` function on the `controlled` constructor that will be used to create the game once the
 `GameWidget` is inserted in the widget tree.
+
 
 ## Examples
 

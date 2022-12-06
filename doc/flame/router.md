@@ -4,9 +4,9 @@
 :page: router
 :show: widget code infobox
 
-This example app shows the use of the `RouterComponent` to move across multiple screens within
-the game. In addition, the "pause" button stops time and applies visual effects to the content of
-the page below it.
+This example app shows the use of the `RouterComponent` to move across multiple
+screens within the game. In addition, the "pause" button stops time and applies
+visual effects to the content of the page below it.
 ```
 
 
@@ -31,6 +31,7 @@ events normally. Such transparent pages are useful for implementing modal dialog
 dialogue UIs, etc.
 
 Usage example:
+
 ```dart
 class MyGame extends FlameGame {
   late final RouterComponent router;
@@ -71,6 +72,11 @@ below it from rendering or receiving pointer events, a transparent route doesn't
 thumb, declare the route opaque if it is full-screen, and transparent if it is supposed to cover
 only a part of the screen.
 
+By default, routes maintain the state of the page component after being popped from the stack
+and the `builder` function is only called the first time a route is activated. Setting
+`maintainState` to `false` drops the page component after the route is popped from the route stack
+and the `builder` function is called each time the route is activated.
+
 
 ## OverlayRoute
 
@@ -80,6 +86,7 @@ routes are transparent by default.
 There are two constructors for the `OverlayRoute`. The first constructor requires a builder function
 that describes how the overlay's widget is to be built. The second constructor can be used when the
 builder function was already specified within the `GameWidget`:
+
 ```dart
 final router = RouterComponent(
   routes: {
@@ -100,6 +107,7 @@ map beforehand: the `RouterComponent.pushOverlay()` method can do it for you. On
 was registered, it can be activated either via the regular `.pushNamed()` method, or via the
 `.pushOverlay()` -- the two method will do exactly the same, though you can use the second one to
 make it more clear in your code that an overlay is being added instead of a regular route.
+
 
 ## ValueRoute
 

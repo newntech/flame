@@ -100,6 +100,7 @@ class GameTester<T extends Game> {
   ///
   /// Use [verify] closure to make verifications/assertions.
   @isTest
+  @Deprecated('Will be removed in version 1.6.0')
   void test(
     String description,
     VerifyFunction<T> verify, {
@@ -122,30 +123,6 @@ class GameTester<T extends Game> {
       tags: tags,
       onPlatform: onPlatform,
       retry: retry,
-    );
-  }
-
-  /// Creates a [Game] specific test case with given [description]
-  /// which runs inside the Flutter test environment.
-  ///
-  /// Use [verify] closure to make verifications/assertions.
-  @isTest
-  @Deprecated('Use testGameWidget instead, will be removed in v1.3.0')
-  void widgetTest(
-    String description,
-    WidgetVerifyFunction<T>? verify, {
-    bool? skip,
-    Timeout? timeout,
-    bool? semanticsEnabled,
-    dynamic tags,
-  }) {
-    testGameWidget(
-      description,
-      verify: verify,
-      skip: skip,
-      timeout: timeout,
-      semanticsEnabled: semanticsEnabled,
-      tags: tags,
     );
   }
 

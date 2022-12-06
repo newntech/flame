@@ -1,10 +1,11 @@
-import 'package:flame/src/components/component.dart';
+import 'package:flame/src/components/core/component.dart';
 import 'package:flame/src/components/mixins/draggable.dart';
 import 'package:flame/src/events/flame_game_mixins/has_draggable_components.dart';
 import 'package:flame/src/events/messages/drag_cancel_event.dart';
 import 'package:flame/src/events/messages/drag_end_event.dart';
 import 'package:flame/src/events/messages/drag_start_event.dart';
 import 'package:flame/src/events/messages/drag_update_event.dart';
+import 'package:meta/meta.dart';
 
 /// This mixin can be added to a [Component] allowing it to receive drag events.
 ///
@@ -53,6 +54,7 @@ mixin DragCallbacks on Component {
   void onDragCancel(DragCancelEvent event) => onDragEnd(event.toDragEnd());
 
   @override
+  @mustCallSuper
   void onMount() {
     super.onMount();
     assert(

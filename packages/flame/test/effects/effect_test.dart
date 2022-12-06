@@ -1,4 +1,4 @@
-import 'package:flame/src/components/component.dart';
+import 'package:flame/src/components/core/component.dart';
 import 'package:flame/src/effects/controllers/effect_controller.dart';
 import 'package:flame/src/effects/effect.dart';
 import 'package:flame_test/flame_test.dart';
@@ -68,7 +68,7 @@ void main() {
       expect(effect.x, closeTo(1, 1e-15));
     });
 
-    flameGame.test(
+    testWithFlameGame(
       'removeOnFinish = true',
       (game) async {
         final obj = Component();
@@ -89,7 +89,7 @@ void main() {
       },
     );
 
-    flameGame.test(
+    testWithFlameGame(
       'removeOnFinish = false',
       (game) async {
         final obj = Component();
