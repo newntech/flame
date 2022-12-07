@@ -67,8 +67,5 @@ class TextComponent<T extends TextRenderer> extends PositionComponent {
   void renderPositioned(Canvas canvas) {
     _textRenderer.render(canvas, text, position);
   }
-
-  void renderPositioned(Canvas canvas) {
-    _textRenderer.render(canvas, text, position);
-  }
 }
+
