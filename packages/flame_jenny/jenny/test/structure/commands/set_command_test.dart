@@ -64,7 +64,7 @@ void main() {
           <<if $foo is 54>>
               haha nice now 'set' works even when deeply nested
           <<else>>
-              aaargh :(
+              aaargh >:(
           <<endif>>
           ===
         ''',
@@ -102,9 +102,9 @@ void main() {
         testPlan: r'''
           line: $x = 12
           line: $x = 48
-          line: $x = 8.0
-          line: $x = 3.0
-          line: $x = 1.0
+          line: $x = 8
+          line: $x = 3
+          line: $x = 1
           line: $s = 'Hello world'
         ''',
       );

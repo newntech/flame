@@ -1,3 +1,4 @@
+AABB # axis-aligned bounding box
 AHSL
 AHSV
 ARGB
@@ -22,6 +23,7 @@ arities
 arity
 autofocus
 backpressure
+backquote
 backtick
 backticks
 bitfield
@@ -83,6 +85,7 @@ overmind
 overridable
 pathfinding
 performant
+perlin # a type of noise-generating function
 platformer
 polyline
 positionable
@@ -93,7 +96,6 @@ prerender
 prerendered
 pressable
 proxying
-pubdev
 pubspec
 queryable
 raycast
@@ -109,6 +111,7 @@ redeclaration
 refactor
 refactoring
 refactorings
+refreshable
 reimplement
 reimplemented
 renderable
@@ -117,7 +120,6 @@ respawn
 respawned
 rrect
 rrects
-rsts
 scos
 serializable
 socio
@@ -130,6 +132,7 @@ subfolder
 subfolders
 sublist
 sublists
+subrange
 tappable
 tappables
 tileset
@@ -151,3 +154,4 @@ viewport's
 viewports
 vsync
 widget's
+unawaited

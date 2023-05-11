@@ -51,14 +51,14 @@ class SpriteButton extends StatelessWidget {
     this.srcSize,
     this.pressedSrcPosition,
     this.pressedSrcSize,
+    this.errorBuilder,
+    this.loadingBuilder,
     super.key,
   })  : _buttons = [
           sprite,
           pressedSprite,
         ],
-        _buttonsFuture = null,
-        errorBuilder = null,
-        loadingBuilder = null;
+        _buttonsFuture = null;
 
   SpriteButton.future({
     required Future<Sprite> sprite,

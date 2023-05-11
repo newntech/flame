@@ -50,18 +50,18 @@ void main() {
     group('parseNodeHeader', () {
       test('node with tags', () {
         final yarn = YarnProject();
-        yarn.parse('title: Romeo v Juliette\n'
+        yarn.parse('title: Romeo_v_Juliette\n'
             'requires: Montagues and Capulets\n'
             '\n'
             '// comment\n'
             'location: fair Verona\n'
             '---\n===\n');
-        final node = yarn.nodes['Romeo v Juliette'];
+        final node = yarn.nodes['Romeo_v_Juliette'];
         expect(node, isNotNull);
-        expect(node!.title, 'Romeo v Juliette');
+        expect(node!.title, 'Romeo_v_Juliette');
         expect(node.tags, isNotNull);
-        expect(node.tags!['requires'], 'Montagues and Capulets');
-        expect(node.tags!['location'], 'fair Verona');
+        expect(node.tags['requires'], 'Montagues and Capulets');
+        expect(node.tags['location'], 'fair Verona');
       });
 
       test('multiple colons', () {
@@ -143,18 +143,18 @@ void main() {
           '''),
         );
         final node1 = yarn.nodes['EmptyTags']!;
-        expect(node1.tags, isNotNull);
-        expect(node1.tags!['tags'], '');
+        expect(node1.tags, isNotEmpty);
+        expect(node1.tags['tags'], '');
 
         final node2 = yarn.nodes['Tags']!;
-        expect(node2.tags!['tags'], 'one two three');
+        expect(node2.tags['tags'], 'one two three');
 
         final node3 = yarn.nodes['ArbitraryHeaderWithValue']!;
-        expect(node3.tags!['arbitraryHeader'], 'some-arbitrary-text');
+        expect(node3.tags['arbitraryHeader'], 'some-arbitrary-text');
 
         final node4 = yarn.nodes['Comments']!;
-        expect(node4.tags!['tags'], 'one two three');
-        expect(node4.tags!['metadata'], '');
+        expect(node4.tags['tags'], 'one two three');
+        expect(node4.tags['metadata'], '');
       });
 
       test(
@@ -190,11 +190,11 @@ void main() {
               'Saturn\n\n'
               'Uranus  // LOL\n'
               '===\n');
-        final block = yarn.nodes['test']!.content;
-        expect(block.lines.length, 3);
+        final lines = yarn.nodes['test']!.lines;
+        expect(lines.length, 3);
         for (var i = 0; i < 3; i++) {
-          expect(block.lines[i], isA<DialogueLine>());
-          final line = block.lines[i] as DialogueLine;
+          expect(lines[i], isA<DialogueLine>());
+          final line = lines[i] as DialogueLine;
           expect(line.character, isNull);
           expect(line.tags, isEmpty);
           expect(line.text, ['Jupyter', 'Saturn', 'Uranus'][i]);
@@ -205,10 +205,12 @@ void main() {
     group('parseDialogueLine', () {
       test('line with a speaker', () {
         final yarn = YarnProject()
+          ..strictCharacterNames = false
           ..parse('title:A\n---\nMrGoo: whatever\n===\n');
         expect(yarn.nodes['A']!.lines.first, isA<DialogueLine>());
         final line = yarn.nodes['A']!.lines[0] as DialogueLine;
-        expect(line.character, 'MrGoo');
+        expect(line.character, isA<Character>());
+        expect(line.character!.name, 'MrGoo');
         expect(line.text, 'whatever');
       });
 
@@ -282,7 +284,7 @@ void main() {
           final line = choiceSet.options[i];
           expect(line.character, isNull);
           expect(line.tags, isEmpty);
-          expect(line.condition, isNull);
+          expect(line.isAvailable, true);
           expect(line.block, isEmpty);
           expect(line.text, ['Alpha', 'Beta', 'Gamma'][i]);
         }
@@ -290,6 +292,7 @@ void main() {
 
       test('speakers in options', () {
         final yarn = YarnProject()
+          ..strictCharacterNames = false
           ..parse('title:A\n---\n'
               '-> Alice: Hello!\n'
               '-> Bob: Hi: there!\n'
@@ -298,8 +301,9 @@ void main() {
         final choice = node.lines[0] as DialogueChoice;
         final option0 = choice.options[0];
         final option1 = choice.options[1];
-        expect(option0.character, 'Alice');
-        expect(option1.character, 'Bob');
+        expect(option0.character, isA<Character>());
+        expect(option0.character!.name, 'Alice');
+        expect(option1.character!.name, 'Bob');
         expect(option0.text, 'Hello!');
         expect(option1.text, 'Hi: there!');
       });
@@ -401,7 +405,7 @@ void main() {
         expect(node.lines.length, 3);
         expect(
           linesToText(yarn.nodes['test']!.lines),
-          ['-1', '22', '7.0'],
+          ['-1', '22', '7'],
         );
       });
 
@@ -648,11 +652,13 @@ void main() {
 
       test('parse nested tags', () {
         final yarn = YarnProject()
+          ..strictCharacterNames = false
           ..parse('title: A\n---\n'
               'Warning: [a]Spinning [b][c]Je[/c]nny[/b][/a]\n'
               '===\n');
         final line = yarn.nodes['A']!.lines[0] as DialogueLine;
-        expect(line.character, 'Warning');
+        expect(line.character, isA<Character>());
+        expect(line.character!.name, 'Warning');
         expect(line.text, 'Spinning Jenny');
 
         expect(line.attributes.length, 3);

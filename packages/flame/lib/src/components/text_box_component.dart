@@ -4,9 +4,9 @@ import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:flame/components.dart';
-import 'package:flame/src/extensions/picture_extension.dart';
-import 'package:flame/src/palette.dart';
-import 'package:flame/src/text/text_renderer.dart';
+import 'package:flame/extensions.dart';
+import 'package:flame/palette.dart';
+import 'package:flame/text.dart';
 import 'package:flutter/widgets.dart' hide Image;
 import 'package:meta/meta.dart';
 
@@ -51,7 +51,8 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
   final TextBoxConfig _boxConfig;
   final double pixelRatio;
 
-  final List<String> _lines = [];
+  @visibleForTesting
+  final List<String> lines = [];
   double _maxLineWidth = 0.0;
   late double _lineHeight;
   late int _totalLines;
@@ -129,29 +130,29 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
   @override
   @internal
   void updateBounds() {
-    _lines.clear();
+    lines.clear();
     double? lineHeight;
     final maxBoxWidth = _fixedSize ? width : _boxConfig.maxWidth;
     text.split('\n').forEach((l) {
       l.split(' ').forEach((word) {
-        final possibleLine = _lines.isEmpty ? word : '${_lines.last} $word';
+        final possibleLine = lines.isEmpty ? word : '${lines.last} $word';
         lineHeight ??= textRenderer.measureTextHeight(possibleLine);
 
         final textWidth = textRenderer.measureTextWidth(possibleLine);
         if (textWidth <= maxBoxWidth - _boxConfig.margins.horizontal) {
-          if (_lines.isNotEmpty) {
-            _lines.last = possibleLine;
+          if (lines.isNotEmpty) {
+            lines.last = possibleLine;
           } else {
-            _lines.add(possibleLine);
+            lines.add(possibleLine);
           }
           _updateMaxWidth(textWidth);
         } else {
-          _lines.add(word);
+          lines.add(word);
           _updateMaxWidth(textWidth);
         }
       });
     });
-    _totalLines = _lines.length;
+    _totalLines = lines.length;
     _lineHeight = lineHeight ?? 0.0;
     size = _recomputeSize();
   }
@@ -167,7 +168,7 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
   bool get finished => _lifeTime > totalCharTime + _boxConfig.dismissDelay;
 
   int get _actualTextLength {
-    return _lines.map((e) => e.length).sum;
+    return lines.map((e) => e.length).sum;
   }
 
   int get currentChar => _boxConfig.timePerChar == 0.0
@@ -176,14 +177,14 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
 
   int get currentLine {
     var totalCharCount = 0;
-    final _currentChar = currentChar;
-    for (var i = 0; i < _lines.length; i++) {
-      totalCharCount += _lines[i].length;
-      if (totalCharCount > _currentChar) {
+    final cachedCurrentChar = currentChar;
+    for (var i = 0; i < lines.length; i++) {
+      totalCharCount += lines[i].length;
+      if (totalCharCount > cachedCurrentChar) {
         return i;
       }
     }
-    return _lines.length - 1;
+    return lines.length - 1;
   }
 
   double getLineWidth(String line, int charCount) {
@@ -198,18 +199,19 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
     } else if (_boxConfig.growingBox) {
       var i = 0;
       var totalCharCount = 0;
-      final _currentChar = currentChar;
-      final _currentLine = currentLine;
-      final textWidth = _lines.sublist(0, _currentLine + 1).map((line) {
-        final charCount =
-            (i < _currentLine) ? line.length : (_currentChar - totalCharCount);
+      final cachedCurrentChar = currentChar;
+      final cachedCurrentLine = currentLine;
+      final textWidth = lines.sublist(0, cachedCurrentLine + 1).map((line) {
+        final charCount = (i < cachedCurrentLine)
+            ? line.length
+            : (cachedCurrentChar - totalCharCount);
         totalCharCount += line.length;
         i++;
         return getLineWidth(line, charCount);
       }).reduce(math.max);
       return Vector2(
         textWidth + _boxConfig.margins.horizontal,
-        _lineHeight * _lines.length + _boxConfig.margins.vertical,
+        _lineHeight * lines.length + _boxConfig.margins.vertical,
       );
     } else {
       return Vector2(
@@ -220,14 +222,14 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
   }
 
   @override
-  void render(Canvas c) {
+  void render(Canvas canvas) {
     if (cache == null) {
       return;
     }
-    c.save();
-    c.scale(1 / pixelRatio);
-    c.drawImage(cache!, Offset.zero, _imagePaint);
-    c.restore();
+    canvas.save();
+    canvas.scale(1 / pixelRatio);
+    canvas.drawImage(cache!, Offset.zero, _imagePaint);
+    canvas.restore();
   }
 
   Future<Image> _fullRenderAsImage(Vector2 size) {
@@ -252,7 +254,7 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
     final boxHeight = size.y - boxConfig.margins.vertical;
     var charCount = 0;
     for (var i = 0; i < nLines; i++) {
-      var line = _lines[i];
+      var line = lines[i];
       if (i == nLines - 1) {
         final nChars = math.min(currentChar - charCount, line.length);
         line = line.substring(0, nChars);
@@ -268,18 +270,24 @@ class TextBoxComponent<T extends TextRenderer> extends TextComponent {
               i * _lineHeight,
         ),
       );
-      charCount += _lines[i].length;
+      charCount += lines[i].length;
     }
   }
+
+  final Set<Image> cachedToRemove = {};
 
   Future<void> redraw() async {
     final newSize = _recomputeSize();
     final cachedImage = cache;
-    if (cachedImage != null) {
+    if (cachedImage != null && !cachedToRemove.contains(cachedImage)) {
+      cachedToRemove.add(cachedImage);
       // Do not dispose of the cached image immediately, since it may have been
       // sent into the rendering pipeline where it is still pending to be used.
       // See issue #1618 for details.
-      Future.delayed(const Duration(milliseconds: 100), cachedImage.dispose);
+      Future.delayed(const Duration(milliseconds: 100), () {
+        cachedToRemove.remove(cachedImage);
+        cachedImage.dispose();
+      });
     }
     cache = await _fullRenderAsImage(newSize);
     size = newSize;

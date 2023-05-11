@@ -15,7 +15,7 @@ void main() {
           ===
         ''',
         testPlan: '''
-          line: 8.0
+          line: 8
         ''',
       );
     });
@@ -31,7 +31,7 @@ void main() {
           ===
         ''',
         testPlan: '''
-          line: 4.0
+          line: 4
         ''',
       );
     });
@@ -40,7 +40,7 @@ void main() {
       final yarn = YarnProject()
         ..parse(
           'title:A\n---\n'
-          '{ 4 / 0 }\n'
+          '{ 4.0 / 0.0 }\n'
           '===\n',
         );
       final line = yarn.nodes['A']!.lines[0] as DialogueLine;

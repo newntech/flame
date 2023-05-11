@@ -45,10 +45,10 @@ class Route extends PositionComponent with ParentIsA<RouterComponent> {
   final bool maintainState;
 
   /// The name of the route (set by the [RouterComponent]).
-  String get name => _name;
-  late String _name;
+  String? get name => _name;
+  String? _name;
   @internal
-  set name(String value) => _name = value;
+  set name(String? value) => _name = value;
 
   /// The function that will be invoked in order to build the page component
   /// when this route first becomes active. This function may also be `null`,
@@ -143,8 +143,8 @@ class Route extends PositionComponent with ParentIsA<RouterComponent> {
   /// If [maintainState] is false, the page component rendered by this route
   /// is not retained when the route it popped.
   @internal
-  void didPop(Route previousRoute) {
-    onPop(previousRoute);
+  void didPop(Route nextRoute) {
+    onPop(nextRoute);
     if (!maintainState) {
       _page?.removeFromParent();
       _page = null;

@@ -1,5 +1,6 @@
 import 'dart:html'; // ignore: avoid_web_libraries_in_flutter
 
+import 'package:doc_flame_examples/anchor.dart';
 import 'package:doc_flame_examples/anchor_by_effect.dart';
 import 'package:doc_flame_examples/anchor_to_effect.dart';
 import 'package:doc_flame_examples/collision_detection.dart';
@@ -30,6 +31,7 @@ import 'package:doc_flame_examples/sequence_effect.dart';
 import 'package:doc_flame_examples/size_by_effect.dart';
 import 'package:doc_flame_examples/size_to_effect.dart';
 import 'package:doc_flame_examples/tap_events.dart';
+import 'package:doc_flame_examples/time_scale.dart';
 import 'package:doc_flame_examples/value_route.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/widgets.dart';
@@ -71,6 +73,8 @@ void main() {
     'glow_effect': GlowEffectExample.new,
     'remove_effect': RemoveEffectGame.new,
     'color_effect': ColorEffectExample.new,
+    'time_scale': TimeScaleGame.new,
+    'anchor': AnchorGame.new,
   };
   final game = routes[page]?.call();
   if (game != null) {

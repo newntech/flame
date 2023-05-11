@@ -10,6 +10,7 @@ void main() {
   group('DialogueRunner', () {
     test('plain dialogue', () async {
       final yarn = YarnProject()
+        ..strictCharacterNames = false
         ..parse(
           '-------------\n'
           'title: Hamlet\n'
@@ -27,7 +28,7 @@ void main() {
         );
       final view = _RecordingDialogueView();
       final dialogue = DialogueRunner(yarnProject: yarn, dialogueViews: [view]);
-      await dialogue.runNode('Hamlet');
+      await dialogue.startDialogue('Hamlet');
       expect(
         view.events,
         [
@@ -65,6 +66,7 @@ void main() {
 
     test('DialogueViews with delays', () async {
       final yarn = YarnProject()
+        ..strictCharacterNames = false
         ..parse('title: The Robot and the Mattress\n'
             '---\n'
             'Zem: Hello, robot\n'
@@ -93,7 +95,7 @@ void main() {
         yarnProject: yarn,
         dialogueViews: [view1, view2, view3],
       );
-      await dialogue.runNode('The Robot and the Mattress');
+      await dialogue.startDialogue('The Robot and the Mattress');
       expect(events, [
         '[A] onDialogueStart()',
         '[B] onDialogueStart()',
@@ -130,7 +132,7 @@ void main() {
             '===\n');
       final view = _RecordingDialogueView(choices: [1]);
       final dialogue = DialogueRunner(yarnProject: yarn, dialogueViews: [view]);
-      await dialogue.runNode('X');
+      await dialogue.startDialogue('X');
       expect(
         view.events,
         [
@@ -149,7 +151,7 @@ void main() {
 
       view.events.clear();
       view.choices.add(0);
-      await dialogue.runNode('X');
+      await dialogue.startDialogue('X');
       expect(
         view.events,
         [
@@ -174,11 +176,11 @@ void main() {
       final view = _RecordingDialogueView(choices: [2, 1]);
       final dialogue = DialogueRunner(yarnProject: yarn, dialogueViews: [view]);
       await expectLater(
-        () => dialogue.runNode('A'),
+        () => dialogue.startDialogue('A'),
         hasDialogueError('Invalid option index chosen in a dialogue: 2'),
       );
       await expectLater(
-        () => dialogue.runNode('A'),
+        () => dialogue.startDialogue('A'),
         hasDialogueError(
           'A dialogue view selected a disabled option: '
           'Option(Only two #disabled)',
@@ -193,11 +195,17 @@ void main() {
         dialogueViews: [_SimpleDialogueView(), _SimpleDialogueView()],
       );
       expect(
-        () => dialogue.runNode('A'),
-        hasDialogueError(
-          'No dialogue views capable of making a dialogue choice',
-        ),
+        () => dialogue.startDialogue('A'),
+        hasDialogueError('No option selected in a DialogueChoice'),
       );
+    });
+
+    test('dialogue view that makes immediate choice selection', () async {
+      final yarn = YarnProject()..parse('title:A\n---\n-> One\n===\n');
+      final view = _ImmediateChoiceDialogueView();
+      final dialogue = DialogueRunner(yarnProject: yarn, dialogueViews: [view]);
+      await dialogue.startDialogue('A');
+      expect(view.finished, true);
     });
 
     testScenario(
@@ -327,9 +335,9 @@ void main() {
         );
       final view = _RecordingDialogueView();
       final dialogue = DialogueRunner(yarnProject: yarn, dialogueViews: [view]);
-      dialogue.runNode('Start');
+      unawaited(dialogue.startDialogue('Start'));
       expect(
-        () => dialogue.runNode('Other'),
+        () => dialogue.startDialogue('Other'),
         hasDialogueError(
           'Cannot run node "Other" because another node is currently running: '
           '"Start"',
@@ -422,4 +430,14 @@ class _DelayedDialogueView extends _RecordingDialogueView {
     final delay = Duration(milliseconds: (lineFinishDelay * 1000).toInt());
     return Future.delayed(delay);
   }
+}
+
+class _ImmediateChoiceDialogueView extends DialogueView {
+  bool finished = false;
+
+  @override
+  int onChoiceStart(DialogueChoice choice) => 0;
+
+  @override
+  void onDialogueFinish() => finished = true;
 }
